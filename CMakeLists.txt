@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 # -DCMAKE_TOOLCHAIN_FILE=/mnt/f/vcpkg/scripts/buildsystems/vcpkg.cmake
 project(Rtp1078)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}-pthread")
 
 find_package(Boost REQUIRED)
@@ -10,5 +10,5 @@ find_package(Boost REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_executable(Rtp1078 main.cpp)
+add_executable(Rtp1078 main.cpp tcp_server.h tcp_session.cpp tcp_session.h)
 target_link_libraries(Rtp1078 LINK_PUBLIC ${Boost_LIBRARIES})
