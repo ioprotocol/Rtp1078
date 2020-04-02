@@ -1,11 +1,19 @@
 #include <cstdlib>
 #include <iostream>
+#include <boost/log/trivial.hpp>
 
 #include "tcp_server.h"
+#include "system_init.h"
 
 int main(int argc, char *argv[]) {
-    std::string str = R"(\12333\ddd)";
-    static_assert(sizeof(int) == 4, "must one");
+    init();
+
+    BOOST_LOG_TRIVIAL(trace) << "A trace severity message";
+    BOOST_LOG_TRIVIAL(debug) << "A debug severity message";
+    BOOST_LOG_TRIVIAL(info) << "An informational severity message";
+    BOOST_LOG_TRIVIAL(warning) << "A warning severity message";
+    BOOST_LOG_TRIVIAL(error) << "An error severity message";
+    BOOST_LOG_TRIVIAL(fatal) << "A fatal severity message";
     try {
         if (argc != 2) {
             std::cerr << "Usage: async_tcp_echo_server <port>\n";
