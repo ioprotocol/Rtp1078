@@ -6,6 +6,7 @@
 #define RTP1078_TCP_SERVER_H
 
 #include <cstdlib>
+#include <boost/log/trivial.hpp>
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -26,6 +27,9 @@ public:
 
     void handle_accept(tcp_session *new_session, const boost::system::error_code &error) {
         if (!error) {
+            BOOST_LOG_TRIVIAL(debug) << "jtt1078 client connected:"
+                                     << new_session->socket().remote_endpoint().address().to_string() << ":"
+                                     << new_session->socket().remote_endpoint().port() << "\n";
             new_session->start();
             new_session = new tcp_session(io_service_);
             acceptor_.async_accept(new_session->socket(),

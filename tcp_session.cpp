@@ -1,11 +1,17 @@
 //
 // Created by xushuyang on 2020-4-1.
 //
+#include <boost/log/trivial.hpp>
 
 #include "tcp_session.h"
 #include "jtt1078_matcher.h"
 
 void tcp_session::start() {
+    rtmp_client_.start(boost::bind(&tcp_session::try_async_read, this, boost::asio::placeholders::error));
+}
+
+void tcp_session::try_async_read(const boost::system::error_code &error) {
+    BOOST_LOG_TRIVIAL(info) << "try_async_read!\n";
     boost::asio::async_read_until(socket_, read_stream_, jtt1078_matcher(),
                                   boost::bind(&tcp_session::handle_read, this,
                                               boost::asio::placeholders::error,
@@ -15,7 +21,7 @@ void tcp_session::start() {
 void tcp_session::handle_read(const boost::system::error_code &error, size_t bytes_transferred) {
     if (!error) {
         handle_packet(bytes_transferred);
-        start();
+        try_async_read(error);
     } else {
         // when read from the socket_, some error occur.
         socket_.close();

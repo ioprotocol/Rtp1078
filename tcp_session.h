@@ -9,12 +9,14 @@
 #include <boost/asio.hpp>
 #include <iostream>
 
+#include "rtmp_client.h"
+
 using boost::asio::ip::tcp;
 
 class tcp_session {
 public:
     tcp_session(boost::asio::io_service &io_service)
-            : socket_(io_service) {
+            : socket_(io_service), rtmp_client_(io_service) {
     }
 
     tcp::socket &socket() {
@@ -22,6 +24,8 @@ public:
     }
 
     void start();
+
+    void try_async_read(const boost::system::error_code &error);
 
     void handle_read(const boost::system::error_code &error, size_t bytes_transferred);
 
@@ -35,6 +39,8 @@ private:
     };
     char data_[max_length];
     boost::asio::streambuf read_stream_;
+
+    rtmp_client rtmp_client_;
 };
 
 
