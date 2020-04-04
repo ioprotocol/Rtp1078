@@ -15,7 +15,9 @@ public:
 
     void start(boost::function<void(const boost::system::error_code)> ready_handler);
 
-    void do_handshake(boost::function<void(const boost::system::error_code)> ready_handler);
+    void do_handshake_c0c1(boost::function<void(const boost::system::error_code)> ready_handler);
+
+    void do_handshake_c2(boost::function<void(const boost::system::error_code)> ready_handler);
 
     void handle_connected(const boost::system::error_code err,
                           boost::function<void(const boost::system::error_code)> connected_handler);
