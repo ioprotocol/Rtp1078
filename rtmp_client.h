@@ -17,7 +17,9 @@ public:
 
     void do_handshake(boost::function<void(const boost::system::error_code)> ready_handler);
 
-    void handle_connected(const boost::system::error_code err, boost::function<void(const boost::system::error_code)> connected_handler);
+    void handle_connected(const boost::system::error_code err,
+                          boost::function<void(const boost::system::error_code)> connected_handler);
+
 private:
     boost::asio::ip::tcp::socket socket_;
 
@@ -26,7 +28,7 @@ private:
     enum {
         max_length = 4096
     };
-    char write_buf_[max_length];
+    char data_[max_length];
 };
 
 
