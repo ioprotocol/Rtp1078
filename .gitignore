@@ -4,3 +4,5 @@
 .idea/*
 *.json
 *.log
+.vscode
+logs
