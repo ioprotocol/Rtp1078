@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
         boost::asio::io_service io_service;
 
         tcp_server s(io_service, global_config.bind_port);
+        BOOST_LOG_TRIVIAL(info) << "jtt1078 server bind at : " << global_config.bind_port << "\n";
 
         io_service.run();
     }

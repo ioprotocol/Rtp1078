@@ -9,28 +9,34 @@
 #include <boost/asio.hpp>
 #include<boost/function.hpp>
 
+#include "rtmp_cmd_connect.h"
+
 class rtmp_client {
 public:
     rtmp_client(boost::asio::io_service &io_service) : socket_(io_service) {}
 
     void start(boost::function<void(const boost::system::error_code)> ready_handler);
 
-    void do_handshake_c0c1(boost::function<void(const boost::system::error_code)> ready_handler);
-
-    void do_handshake_c2(boost::function<void(const boost::system::error_code)> ready_handler);
-
     void handle_connected(const boost::system::error_code err,
                           boost::function<void(const boost::system::error_code)> connected_handler);
 
+    void do_handshake_c0c1(boost::function<void(const boost::system::error_code)> ready_handler);
+
+    void do_rtmp_connect(rtmp_cmd_connect &cmd_connect, boost::function<void(const boost::system::error_code)> ready_handler);
+
 private:
+    size_t encode_rtmp_cmd_connect(rtmp_cmd_connect &cmd_connect);
+
     boost::asio::ip::tcp::socket socket_;
 
     boost::asio::streambuf read_stream_;
 
     enum {
-        max_length = 4096
+        max_length = 1024 * 1024
     };
     char data_[max_length];
+
+    uint32_t window_size_;
 };
 
 

@@ -2,20 +2,22 @@
 #define RTMP_S1_MATCHER_H
 
 #include <utility>
-#include "rtmp.h"
 
 class rtmp_s1_matcher {
 public:
-    rtmp_s1_matcher() {}
+    rtmp_s1_matcher(uint32_t length) : length_(length){}
 
     template<typename Iterator>
     std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const {
         // find fix header for packet 0x30 0x31 0x63 0x64
-        if (end - begin < S1_LENGTH + 1) {
+        if (end - begin < length_) {
             return std::make_pair(begin, false);
         }
-        return std::make_pair((begin + S1_LENGTH + 1), true);
+        return std::make_pair((begin + length_), true);
     }
+
+private:
+    uint32_t length_;
 };
 
 namespace boost {
