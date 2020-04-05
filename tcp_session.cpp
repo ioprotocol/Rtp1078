@@ -21,7 +21,7 @@ void tcp_session::try_async_read(const boost::system::error_code &error) {
     cmd_connect_.setVidioCodecs(0x6040);
     cmd_connect_.setVidioFunction(0xf03f);
     cmd_connect_.setTransactionId(0xf03f);
-    cmd_connect_.setTcUrl("rtmp://192.168.1.106:1935/vod");
+    cmd_connect_.setTcUrl("rtmp://192.168.1.106:1935/live");
 
     rtmp_client_.do_rtmp_connect(cmd_connect_, [](boost::system::error_code err) {
         if(!err) {

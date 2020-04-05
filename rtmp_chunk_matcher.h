@@ -3,15 +3,22 @@
 
 #include <cstdint>
 #include <utility>
+#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/buffers_iterator.hpp>
+#include <boost/asio/streambuf.hpp>
+
+typedef boost::asio::buffers_iterator<
+        boost::asio::streambuf::const_buffers_type> iterator;
 
 class rtmp_chunk_matcher {
 public:
     rtmp_chunk_matcher(uint32_t max_chunk_size) : max_chunk_size_(max_chunk_size) {}
 
-    template<typename Iterator>
-    std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const {
-        uint8_t fm = ((*begin) >> 6) & 0x3;
-        uint8_t stream_id = (*begin) & 0x3F;
+    template<typename iterator>
+    std::pair<iterator, bool> operator()(iterator begin, iterator end) const {
+        uint8_t fm = ((uint8_t)(*begin) >> 6) & 0x3;
+        uint8_t stream_id = (uint8_t)(*begin) & 0x3F;
         uint32_t payload_size = 0;
 
         uint32_t chunk_packet_size = 1;
@@ -31,14 +38,14 @@ public:
                 if (end - begin < chunk_packet_size + 3) {
                     return std::make_pair(begin, false);
                 }
-                payload_size = (*(begin + chunk_packet_size + 3) << 16) | (*(begin + chunk_packet_size + 3) << 8) | (*(begin + chunk_packet_size + 3));
+                payload_size = (*(begin + chunk_packet_size + 3) << 16) | (*(begin + chunk_packet_size + 4) << 8) | (*(begin + chunk_packet_size + 5));
                 chunk_packet_size += 11;
                 break;
             case 1:
                 if (end - begin < chunk_packet_size + 3) {
                     return std::make_pair(begin, false);
                 }
-                payload_size = (*(begin + chunk_packet_size + 3) << 16) | (*(begin + chunk_packet_size + 3) << 8) | (*(begin + chunk_packet_size + 3));
+                payload_size = (*(begin + chunk_packet_size + 3) << 16) | (*(begin + chunk_packet_size + 4) << 8) | (*(begin + chunk_packet_size + 5));
                 chunk_packet_size += 7;
                 break;
             case 2:

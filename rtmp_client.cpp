@@ -153,15 +153,20 @@ size_t rtmp_client::encode_rtmp_cmd_connect(rtmp_cmd_connect &cmd_connect) {
     // update payload size
     char* s = &data_[4];
     write_uint24(&s, p - &data_[12]);
-    // split 2 chunk
-    /*
-    char* m = &data_[12] + 128;
-    char* n = p + 1;
-    while (n > m) {
-        *n = *(n-1);
-        n--;
+    // split 3 chunk
+    char* m = &data_[12];
+    char* n = p;
+    while(n - m > 128) {
+        m = m + 128;
+        n = n + 1;
+        while (n > m) {
+            *n = *(n-1);
+            n--;
+        }
+        *m = (3 << 6) | 3;
+        m++;
+        p++;
+        n = p;
     }
-    *m = (3 << 6) | 3;
-    */
-    return p - &data_[0] + 1;
+    return p - &data_[0];
 }
