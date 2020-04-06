@@ -3,7 +3,7 @@
 //
 #include "rtmp.h"
 
-uint32_t get_rtmp_message_type(const char* p, uint32_t size)
+uint32_t rtmp_message_type(const char* p, uint32_t size)
 {
     uint8_t fm = ((*p) >> 6) & 0x3;
     uint8_t stream_id = (*p) & 0x3F;
@@ -92,4 +92,17 @@ uint32_t rtmp_length_pos(uint8_t v)
         break;
     }
     return length;
+}
+
+uint32_t read_uint32(const char* p)
+{
+	uint32_t v = 0;
+	v = v | (*p);
+	v = v << 8;
+	v = v | (*(p + 1));
+	v = v << 8;
+	v = v | (*(p + 2));
+	v = v << 8;
+	v = v | (*(p + 3));
+	return v;
 }

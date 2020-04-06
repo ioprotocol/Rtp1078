@@ -133,7 +133,11 @@ class rtmp_packet_stream
 
     void create_connect_packet(rtmp_cmd_connect_t& cmd);
 
-    inline void set_chunk_size(uint32 size)
+	void create_acknowledgement(uint32_t received_size);
+
+	void create_acknowledgement_window_size(uint32_t window_size);
+
+	inline void set_chunk_size(uint32_t size)
     {
         chunk_size_ = size;
     }

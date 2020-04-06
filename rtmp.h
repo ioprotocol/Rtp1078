@@ -26,6 +26,7 @@
 #define NGX_RTMP_MSG_EDGE               7
 #define NGX_RTMP_MSG_AUDIO              8
 #define NGX_RTMP_MSG_VIDEO              9
+#define NGX_RTMP_MSG_AMF				14
 #define NGX_RTMP_MSG_AMF3_META          15
 #define NGX_RTMP_MSG_AMF3_SHARED        16
 #define NGX_RTMP_MSG_AMF3_CMD           17
@@ -37,6 +38,7 @@
 #define NGX_RTMP_MSG_UNDEFINED          255
 
 #define NGX_RTMP_MAX_CHUNK_SIZE         10485760
+#define NGX_RTMP_MAX_WINDOW_SIZE        500000
 
 #define NGX_RTMP_CONNECT                NGX_RTMP_MSG_MAX + 1
 #define NGX_RTMP_DISCONNECT             NGX_RTMP_MSG_MAX + 2
@@ -129,7 +131,7 @@
  * fmt = 3  0 bytes
  */
 
-uint32_t get_rtmp_message_type(const char* p, uint32_t size);
+uint32_t rtmp_message_type(const char* p, uint32_t size);
 
 /**
  * Basic Header and Message Header size
@@ -147,4 +149,5 @@ uint32_t rtmp_header_size(uint8_t v);
  */
 uint32_t rtmp_length_pos(uint8_t v);
 
+uint32_t read_uint32(const char* p);
 #endif //RTP1078_RTMP_H

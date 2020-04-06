@@ -6,7 +6,7 @@
 
 class rtmp_chunk_matcher
 {
- public:
+public:
     rtmp_chunk_matcher(uint32_t max_chunk_size) : max_chunk_size_(max_chunk_size)
     {
     }
@@ -58,6 +58,12 @@ class rtmp_chunk_matcher
             payload_size = max_chunk_size_;
             break;
         }
+        // 合并chunk，读取成一包
+        if (payload_size > max_chunk_size_)
+        {
+            //
+            chunk_packet_size += payload_size / max_chunk_size_;
+        }
         chunk_packet_size += payload_size;
         if (end - begin < chunk_packet_size)
         {
@@ -66,7 +72,7 @@ class rtmp_chunk_matcher
         return std::make_pair((begin + chunk_packet_size), true);
     }
 
- private:
+private:
     uint32_t max_chunk_size_;
 };
 

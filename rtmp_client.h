@@ -9,34 +9,53 @@
 #include <boost/asio.hpp>
 #include<boost/function.hpp>
 
-#include "rtmp_cmd.h"
 #include "rtmp_packet_stream.h"
+#include "rtmp_cmd.h"
+
+class tcp_session;
 
 class rtmp_client
 {
- public:
-    rtmp_client(boost::asio::io_service& io_service);
+public:
+	rtmp_client(boost::asio::io_service& io_service, tcp_session* session);
 
-    void start(boost::function<void(const boost::system::error_code)> ready_handler);
+	void start();
 
-    void handle_connected(const boost::system::error_code err, boost::function<void(const boost::system::error_code)> connected_handler);
+	void handle_connected(const boost::system::error_code err);
 
- private:
-    void do_handshake_c0c1(boost::function<void(const boost::system::error_code)> ready_handler);
+private:
+	void do_handshake_c0c1();
 
-    void do_rtmp_connect(boost::function<void(const boost::system::error_code)> ready_handler);
+	void do_rtmp_connect();
 
- private:
-    boost::asio::ip::tcp::socket socket_;
+	void do_receive_rtmp_packet();
 
-    boost::asio::streambuf read_stream_;
+	void do_parse_rtmp_packet(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
 
-    uint32_t window_size_;
-    uint32_t chunk_size_;
+	void do_handle_rtmp_set_ack_size(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
 
-    rtmp_packet_stream rtmp_output_stream_;
+	void do_handle_rtmp_set_bandwidth(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
 
-    rtmp_cmd_connect_t cmd_connect_
+	void do_handle_rtmp_set_chunk_size(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+
+	void do_send_acknowledgement(boost::function<void(const boost::system::error_code)> handler);
+
+	void do_send_acknowledgement_size(boost::function<void(const boost::system::error_code)> handler);
+private:
+	tcp_session* session_;
+	boost::asio::io_service& io_service_;
+	boost::asio::ip::tcp::socket socket_;
+	boost::asio::streambuf read_stream_;
+
+	uint32_t window_size_;
+	uint32_t acknowledgement_size_;
+	uint32_t chunk_size_;
+
+	uint32_t receive_bytes_count_;
+
+	rtmp_packet_stream rtmp_output_stream_;
+
+	rtmp_cmd_connect_t cmd_connect_;
 };
 
 #endif //RTP1078_RTMP_CLIENT_H

@@ -10,7 +10,6 @@
 #include <iostream>
 
 #include "rtmp_client.h"
-#include "rtmp_cmd.h"
 
 using boost::asio::ip::tcp;
 
@@ -18,7 +17,7 @@ class tcp_session
 {
  public:
 	tcp_session(boost::asio::io_service& io_service)
-		: socket_(io_service), rtmp_client_(io_service)
+		: socket_(io_service), rtmp_client_(io_service, this)
 	{
 	}
 
@@ -29,7 +28,7 @@ class tcp_session
 
 	void start();
 
-	void try_async_read(const boost::system::error_code& error);
+	void handle_proxy(const boost::system::error_code& error);
 
 	void handle_read(const boost::system::error_code& error, size_t bytes_transferred);
 
@@ -46,7 +45,6 @@ class tcp_session
 	boost::asio::streambuf read_stream_;
 
 	rtmp_client rtmp_client_;
-	rtmp_cmd_connect_t cmd_connect_;
 };
 
 #endif //RTP1078_TCP_SESSION_H

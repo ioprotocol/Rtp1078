@@ -3,18 +3,21 @@
 //
 #include <boost/log/trivial.hpp>
 
-#include "rtmp.h"
 #include "tcp_session.h"
 #include "jtt1078_matcher.h"
 
 void tcp_session::start()
 {
-    rtmp_client_.start(boost::bind(&tcp_session::try_async_read, this, boost::asio::placeholders::error));
+    rtmp_client_.start();
 }
 
-void tcp_session::try_async_read(const boost::system::error_code& error)
+void tcp_session::handle_proxy(const boost::system::error_code& error)
 {
-    BOOST_LOG_TRIVIAL(info) << "Try to proxy jtt1089 video data!\n";
+	if(error) {
+		BOOST_LOG_TRIVIAL(error) << "Failed to proxy jtt1089 video data!" << error.message() << "\n" ;
+		return;
+	}
+    BOOST_LOG_TRIVIAL(info) << "Try to proxy jtt1089 video data!\n" ;
 
     boost::asio::async_read_until(socket_, read_stream_, jtt1078_matcher(),
             boost::bind(&tcp_session::handle_read, this,
@@ -27,7 +30,6 @@ void tcp_session::handle_read(const boost::system::error_code& error, size_t byt
     if (!error)
     {
         handle_packet(bytes_transferred);
-        try_async_read(error);
     }
     else
     {
