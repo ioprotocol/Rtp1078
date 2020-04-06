@@ -9,7 +9,6 @@
 #include <string>
 
 typedef struct {
-    std::string name;
     uint64_t transaction_id;
     std::string app;
     std::string flashver;

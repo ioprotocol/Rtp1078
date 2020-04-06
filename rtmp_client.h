@@ -15,17 +15,16 @@
 class rtmp_client
 {
  public:
-    rtmp_client(boost::asio::io_service& io_service) : socket_(io_service), chunk_size_(NGX_RTMP_DEFAULT_CHUNK_SIZE), rtmp_output_stream_(chunk_size_)
-    {
-    }
+    rtmp_client(boost::asio::io_service& io_service);
 
     void start(boost::function<void(const boost::system::error_code)> ready_handler);
 
     void handle_connected(const boost::system::error_code err, boost::function<void(const boost::system::error_code)> connected_handler);
 
+ private:
     void do_handshake_c0c1(boost::function<void(const boost::system::error_code)> ready_handler);
 
-    void do_rtmp_connect(rtmp_cmd_connect_t& cmd, boost::function<void(const boost::system::error_code)> ready_handler);
+    void do_rtmp_connect(boost::function<void(const boost::system::error_code)> ready_handler);
 
  private:
     boost::asio::ip::tcp::socket socket_;
@@ -37,11 +36,7 @@ class rtmp_client
 
     rtmp_packet_stream rtmp_output_stream_;
 
-    enum
-    {
-        max_length = 4096
-    };
-    char data_[max_length];
+    rtmp_cmd_connect_t cmd_connect_
 };
 
 #endif //RTP1078_RTMP_CLIENT_H

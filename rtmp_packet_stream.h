@@ -133,6 +133,11 @@ class rtmp_packet_stream
 
     void create_connect_packet(rtmp_cmd_connect_t& cmd);
 
+    inline void set_chunk_size(uint32 size)
+    {
+        chunk_size_ = size;
+    }
+
     void packet_to_chunk();
 
     friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint8_t v);

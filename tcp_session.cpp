@@ -14,23 +14,7 @@ void tcp_session::start()
 
 void tcp_session::try_async_read(const boost::system::error_code& error)
 {
-    BOOST_LOG_TRIVIAL(info) << "try_async_read!\n";
-    cmd_connect_.name = "connect";
-    cmd_connect_.app = "live";
-    cmd_connect_.flashver = "FMLE/3.0 (compatible; FMSc/1.0)";
-    cmd_connect_.capabilities = 0xe06d40;
-    cmd_connect_.audio_codecs = 0x9040;
-    cmd_connect_.vidio_codecs = 0x6040;
-    cmd_connect_.vidio_function = 0xf03f;
-    cmd_connect_.transaction_id = 0xf03f;
-    cmd_connect_.tc_url = "rtmp://192.168.1.106:1935/live";
-
-    rtmp_client_.do_rtmp_connect(cmd_connect_, [](boost::system::error_code err)
-    {
-      if (!err)
-      {
-      }
-    });
+    BOOST_LOG_TRIVIAL(info) << "Try to proxy jtt1089 video data!\n";
 
     boost::asio::async_read_until(socket_, read_stream_, jtt1078_matcher(),
             boost::bind(&tcp_session::handle_read, this,

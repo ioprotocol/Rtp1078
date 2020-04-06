@@ -115,7 +115,7 @@ void rtmp_packet_stream::create_connect_packet(rtmp_cmd_connect_t& cmd)
     // message stream id
     write((uint32_t)0);
     // payload
-    write_amf_string(cmd.name);
+    write_amf_string("connect");
     write_amf_number(cmd.transaction_id);
     write_amf_object();
     write_amf_number("objectEncoding", 0);
