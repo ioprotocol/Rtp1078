@@ -10,14 +10,17 @@ char hex_table[16] = {
         '9', 'a', 'b', 'c', 'd', 'e', 'f'
 };
 
-char integer_to_hex(unsigned char v) {
+char integer_to_hex(unsigned char v)
+{
     return hex_table[v];
 }
 
-void print_packet(const char *p, uint32_t s) {
+void print_packet(const char* p, uint32_t s)
+{
     uint32_t i = 0, j = 0;
     char log[s * 2 + 1];
-    while (i < s) {
+    while (i < s)
+    {
         unsigned char c = *(p + i);
         log[j++] = integer_to_hex(c >> 4);
         log[j++] = integer_to_hex(c & 0xF);

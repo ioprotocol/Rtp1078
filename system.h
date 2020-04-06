@@ -7,11 +7,12 @@
 
 #include <iostream>
 
-typedef struct {
-    uint32_t bind_port;
+typedef struct
+{
+	uint32_t bind_port;
 
-    std::string rtmp_svr;
-    uint32_t rtmp_port;
+	std::string rtmp_svr;
+	uint32_t rtmp_port;
 } config_t;
 
 #endif //RTP1078_SYSTEM_H

@@ -93,23 +93,6 @@
 #define RTMP_S1_LENGTH                  1536
 #define RTMP_S2_LENGTH                  1536
 
-// rtmp handshake packet
-#pragma pack(1)
-typedef struct {
-    uint32_t time;
-    uint32_t zero;
-    char payload[RTMP_C1_LENGTH - 8];
-} packet_handshake_t;
-#pragma pack()
-
-typedef packet_handshake_t packet_c1_t;
-
-typedef packet_handshake_t packet_c2_t;
-
-typedef packet_handshake_t packet_s1_t;
-
-typedef packet_handshake_t packet_s2_t;
-
 // Chunk format
 /**
   *      0              1               2                  3
@@ -146,7 +129,7 @@ typedef packet_handshake_t packet_s2_t;
  * fmt = 3  0 bytes
  */
 
-uint32_t get_rtmp_message_type(const char *p, uint32_t size);
+uint32_t get_rtmp_message_type(const char* p, uint32_t size);
 
 /**
  * Basic Header and Message Header size

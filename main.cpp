@@ -6,20 +6,23 @@
 
 config_t global_config;
 
-int main(int argc, char *argv[]) {
-    init();
+int main(int argc, char* argv[])
+{
+	init();
 
-    try {
-        boost::asio::io_service io_service;
+	try
+	{
+		boost::asio::io_service io_service;
 
-        tcp_server s(io_service, global_config.bind_port);
-        BOOST_LOG_TRIVIAL(info) << "jtt1078 server bind at : " << global_config.bind_port << "\n";
+		tcp_server s(io_service, global_config.bind_port);
+		BOOST_LOG_TRIVIAL(info) << "jtt1078 server bind at : " << global_config.bind_port << "\n";
 
-        io_service.run();
-    }
-    catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what() << "\n";
-    }
+		io_service.run();
+	}
+	catch (std::exception& e)
+	{
+		BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what() << "\n";
+	}
 
-    return 0;
+	return 0;
 }
