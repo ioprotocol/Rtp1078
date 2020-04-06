@@ -10,7 +10,7 @@
 #include <iostream>
 
 #include "rtmp_client.h"
-#include "rtmp_cmd_connect.h"
+#include "rtmp_cmd.h"
 
 using boost::asio::ip::tcp;
 
@@ -42,7 +42,7 @@ private:
     boost::asio::streambuf read_stream_;
 
     rtmp_client rtmp_client_;
-    rtmp_cmd_connect cmd_connect_;
+    rtmp_cmd_connect_t cmd_connect_;
 };
 
 

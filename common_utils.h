@@ -5,7 +5,7 @@
 #ifndef RTP1078_COMMON_UTILS_H
 #define RTP1078_COMMON_UTILS_H
 
-#include <cstdint>
+#include <stdint.h>
 
 #define BYTE_ORDER_SWAP16(A)        ((uint16_t)(((A & 0xff00) >> 8) | ((A & 0x00ff) << 8)))
 

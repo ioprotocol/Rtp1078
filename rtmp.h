@@ -5,8 +5,10 @@
 #ifndef RTP1078_RTMP_H
 #define RTP1078_RTMP_H
 
-#include <cstdint>
-#include <iostream>
+#include <stdint.h>
+#include <string>
+
+#define RTMP_MAX_PACKET_SIZE            16 *1024
 
 #define NGX_RTMP_VERSION                3
 
@@ -87,17 +89,16 @@
 #define SUPPORT_VID_H264                0x0080
 #define SUPPORT_SND_AAC                 0x0400
 
-#define C0                              3
-#define C1_LENGTH                       1536
-#define S1_LENGTH                       1536
-#define S2_LENGTH                       1536
+#define RTMP_C1_LENGTH                  1536
+#define RTMP_S1_LENGTH                  1536
+#define RTMP_S2_LENGTH                  1536
 
 // rtmp handshake packet
 #pragma pack(1)
 typedef struct {
     uint32_t time;
     uint32_t zero;
-    char payload[C1_LENGTH - 8];
+    char payload[RTMP_C1_LENGTH - 8];
 } packet_handshake_t;
 #pragma pack()
 
@@ -147,14 +148,20 @@ typedef packet_handshake_t packet_s2_t;
 
 uint32_t get_rtmp_message_type(const char *p, uint32_t size);
 
-void write_uint16(char** p, uint16_t value);
+/**
+ * Basic Header and Message Header size
+ *
+ * @param v
+ * @return
+ */
+uint32_t rtmp_header_size(uint8_t v);
 
-void write_uint24(char** p, uint32_t value);
-
-void write_uint32(char** p, uint32_t value);
-
-void write_uint64(char** p, uint64_t value);
-
-void write_string(char** p, std::string value);
+/**
+ * Message length field position.
+ *
+ * @param v
+ * @return
+ */
+uint32_t rtmp_length_pos(uint8_t v);
 
 #endif //RTP1078_RTMP_H

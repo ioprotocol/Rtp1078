@@ -24,42 +24,61 @@ uint32_t get_rtmp_message_type(const char *p, uint32_t size)
     return NGX_RTMP_MSG_UNDEFINED;
 }
 
-void write_uint16(char **p, uint16_t value) {
-    **p = value >> 8;
-    *p = *p + 1;
-    **p = value & 0xFF;
-    *p = *p + 1;
-}
+uint32_t rtmp_header_size(uint8_t v) {
+    uint8_t fm = (uint8_t)((v >> 6) & 0x3);
+    uint8_t stream_id = (uint8_t)(v & 0x3F);
+    uint32_t length = 1;
 
-void write_uint24(char **p, uint32_t value) {
-    **p = (value >> 16) & 0xFF;
-    *p = *p + 1;
-    **p = (value >> 8) & 0xFF;
-    *p = *p + 1;
-    **p = value & 0xFF;
-    *p = *p + 1;
-}
-
-void write_uint32(char **p, uint32_t value) {
-    **p = (value >> 24) & 0xFF;
-    *p = *p + 1;
-    **p = (value >> 16) & 0xFF;
-    *p = *p + 1;
-    **p = (value >> 8) & 0xFF;
-    *p = *p + 1;
-    **p = value & 0xFF;
-    *p = *p + 1;
-}
-
-void write_uint64(char **p, uint64_t value) {
-    write_uint32(p, value >> 32);
-    write_uint32(p, value & 0xFFFFFFFF);
-}
-
-void write_string(char **p, std::string value) {
-    write_uint16(p, value.size());
-    for (char v : value) {
-        **p = v;
-        *p = *p + 1;
+    // Chunk header length
+    if (stream_id == 0) {
+        length = 2;
     }
+    if (stream_id == 1) {
+        length = 3;
+    }
+    // Chunk message header length
+    switch (fm) {
+        case 0:
+            length += 11;
+            break;
+        case 1:
+            length += 7;
+            break;
+        case 2:
+            length += 3;
+            break;
+        case 3:
+            break;
+    }
+    return length;
+}
+
+uint32_t rtmp_length_pos(uint8_t v) {
+    uint8_t fm = (uint8_t)((v >> 6) & 0x3);
+    uint8_t stream_id = (uint8_t)(v & 0x3F);
+
+    uint32_t length = 1;
+    // Chunk header length
+    if (stream_id == 0) {
+        length = 2;
+    }
+    if (stream_id == 1) {
+        length = 3;
+    }
+    // Chunk message header length
+    switch (fm) {
+        case 0:
+            length += 3;
+            break;
+        case 1:
+            length += 3;
+            break;
+        case 2:
+            length = -1;
+            break;
+        case 3:
+            length = -1;
+            break;
+    }
+    return length;
 }
