@@ -242,7 +242,7 @@ void rtmp_client::do_handle_rtmp_set_chunk_size(const char* buf, std::size_t siz
 void rtmp_client::do_handle_rtmp_cmd_amf(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler)
 {
 	uint32_t head_size = rtmp_header_size(*buf);
-
+	// TODO
 }
 
 void rtmp_client::do_send_acknowledgement(boost::function<void(const boost::system::error_code)> handler)
