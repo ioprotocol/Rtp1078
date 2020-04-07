@@ -293,7 +293,7 @@ void rtmp_client::do_send_fc_publish()
 	{
 	  if (err)
 	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement_size send err!" << err.message() << "\n";
+		  BOOST_LOG_TRIVIAL(error) << "do_send_fc_publish send err!" << err.message() << "\n";
 	  }
 	  else
 	  {
@@ -309,7 +309,7 @@ void rtmp_client::do_send_publish()
 	{
 	  if (err)
 	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement_size send err!" << err.message() << "\n";
+		  BOOST_LOG_TRIVIAL(error) << "do_send_publish send err!" << err.message() << "\n";
 	  }
 	});
 }

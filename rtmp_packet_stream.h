@@ -141,6 +141,8 @@ class rtmp_packet_stream
 
 	void create_publish_packet(std::string app, std::string name);
 
+	void create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, const char* data, size_t size);
+
 	inline void set_chunk_size(uint32_t size)
     {
         chunk_size_ = size;

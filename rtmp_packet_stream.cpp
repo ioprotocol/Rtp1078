@@ -210,5 +210,11 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 	packet_to_chunk();
 }
 
+void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, const char* data, size_t size)
+{
+	reset();
+
+}
+
 
 
