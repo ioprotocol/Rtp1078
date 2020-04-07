@@ -26,7 +26,6 @@
 #define NGX_RTMP_MSG_EDGE               7
 #define NGX_RTMP_MSG_AUDIO              8
 #define NGX_RTMP_MSG_VIDEO              9
-#define NGX_RTMP_MSG_AMF				14
 #define NGX_RTMP_MSG_AMF3_META          15
 #define NGX_RTMP_MSG_AMF3_SHARED        16
 #define NGX_RTMP_MSG_AMF3_CMD           17

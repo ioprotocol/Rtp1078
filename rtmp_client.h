@@ -38,6 +38,8 @@ private:
 
 	void do_handle_rtmp_set_chunk_size(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
 
+	void do_handle_rtmp_cmd_amf(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+
 	void do_send_acknowledgement(boost::function<void(const boost::system::error_code)> handler);
 
 	void do_send_acknowledgement_size(boost::function<void(const boost::system::error_code)> handler);

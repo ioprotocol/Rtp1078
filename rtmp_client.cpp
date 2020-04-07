@@ -165,9 +165,6 @@ void rtmp_client::do_parse_rtmp_packet(const char* buf, std::size_t size, boost:
 	case NGX_RTMP_MSG_EDGE:
 		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_EDGE !" << "\n";
 		break;
-	case NGX_RTMP_MSG_AMF:
-		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_AMF !" << "\n";
-		break;
 	case NGX_RTMP_MSG_AUDIO:
 		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_AUDIO !" << "\n";
 		break;
@@ -190,7 +187,7 @@ void rtmp_client::do_parse_rtmp_packet(const char* buf, std::size_t size, boost:
 		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_AMF_SHARED !" << "\n";
 		break;
 	case NGX_RTMP_MSG_AMF_CMD:
-		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_AMF_CMD !" << "\n";
+		do_handle_rtmp_cmd_amf(buf, size, handler);
 		break;
 	case NGX_RTMP_MSG_AGGREGATE:
 		BOOST_LOG_TRIVIAL(info) << "NGX_RTMP_MSG_AGGREGATE !" << "\n";
@@ -238,7 +235,14 @@ void rtmp_client::do_handle_rtmp_set_chunk_size(const char* buf, std::size_t siz
 	uint32_t new_chunk_size = read_uint32(buf + head_size);
 	BOOST_LOG_TRIVIAL(info) << "chunk_size_ from:" << chunk_size_ << " to" << new_chunk_size << "\n";
 	this->chunk_size_ = new_chunk_size;
+	this->rtmp_output_stream_.set_chunk_size(this->chunk_size_);
 	handler(boost::system::error_code());
+}
+
+void rtmp_client::do_handle_rtmp_cmd_amf(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler)
+{
+	uint32_t head_size = rtmp_header_size(*buf);
+
 }
 
 void rtmp_client::do_send_acknowledgement(boost::function<void(const boost::system::error_code)> handler)
