@@ -137,6 +137,10 @@ class rtmp_packet_stream
 
 	void create_acknowledgement_window_size(uint32_t window_size);
 
+	void create_fc_publish_packet(std::string name);
+
+	void create_publish_packet(std::string app, std::string name);
+
 	inline void set_chunk_size(uint32_t size)
     {
         chunk_size_ = size;

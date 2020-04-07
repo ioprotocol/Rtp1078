@@ -20,6 +20,8 @@ typedef struct {
     uint64_t vidio_function;
     std::string page_url;
     uint64_t capabilities;
+
+    std::string name;
 } rtmp_cmd_connect_t;
 
 #endif //RTP1078_RTMP_CMD_H

@@ -168,4 +168,47 @@ void rtmp_packet_stream::create_connect_packet(rtmp_cmd_connect_t& cmd)
 }
 
 
+void rtmp_packet_stream::create_fc_publish_packet(std::string name)
+{
+	reset();
+	write((uint8_t)3);
+	// timestamp
+	write_uint24(0);
+	// payload_size
+	write_uint24(0);
+	// message type id
+	write((uint8_t)NGX_RTMP_MSG_AMF_CMD);
+	// message stream id
+	write((uint32_t)0);
+	// payload
+	write_amf_string("FcPublish");
+	write_amf_number(3);
+	write((uint8_t)NGX_RTMP_AMF_NULL);
+	write_amf_string(name);
+
+	packet_to_chunk();
+}
+
+void rtmp_packet_stream::create_publish_packet(std::string app, std::string name)
+{
+	reset();
+	write((uint8_t)4);
+	// timestamp
+	write_uint24(0);
+	// payload_size
+	write_uint24(0);
+	// message type id
+	write((uint8_t)NGX_RTMP_MSG_AMF_CMD);
+	// message stream id
+	write((uint32_t)1);
+	// payload
+	write_amf_string("publish");
+	write((uint8_t)NGX_RTMP_AMF_NULL);
+	write_amf_string(name);
+	write_amf_string(app);
+
+	packet_to_chunk();
+}
+
+
 

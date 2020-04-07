@@ -148,5 +148,13 @@ uint32_t rtmp_header_size(uint8_t v);
  */
 uint32_t rtmp_length_pos(uint8_t v);
 
+uint32_t read_uint16(const char* p);
+
+uint32_t read_uint24(const char* p);
+
 uint32_t read_uint32(const char* p);
+
+uint64_t read_uint64(const char* p);
+
+uint32_t search_amf_tree(const char* tree, size_t tree_size, const char* key);
 #endif //RTP1078_RTMP_H

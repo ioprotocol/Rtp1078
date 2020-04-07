@@ -30,20 +30,26 @@ private:
 
 	void do_receive_rtmp_packet();
 
-	void do_parse_rtmp_packet(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+	void do_parse_rtmp_packet(const char* buf, std::size_t size);
 
-	void do_handle_rtmp_set_ack_size(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+	void do_handle_rtmp_set_ack_size(const char* buf, std::size_t size);
 
-	void do_handle_rtmp_set_bandwidth(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+	void do_handle_rtmp_set_bandwidth(const char* buf, std::size_t size);
 
-	void do_handle_rtmp_set_chunk_size(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+	void do_handle_rtmp_set_chunk_size(const char* buf, std::size_t size);
 
-	void do_handle_rtmp_cmd_amf(const char* buf, std::size_t size, boost::function<void(const boost::system::error_code)> handler);
+	void do_handle_rtmp_cmd_amf(const char* buf, std::size_t size);
 
-	void do_send_acknowledgement(boost::function<void(const boost::system::error_code)> handler);
+	void do_send_acknowledgement();
 
-	void do_send_acknowledgement_size(boost::function<void(const boost::system::error_code)> handler);
-private:
+	void do_send_acknowledgement_size();
+
+	void do_send_fc_publish();
+
+	void do_send_publish();
+
+
+ private:
 	tcp_session* session_;
 	boost::asio::io_service& io_service_;
 	boost::asio::ip::tcp::socket socket_;
