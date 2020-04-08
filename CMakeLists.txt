@@ -13,5 +13,5 @@ find_package(Boost 1.72.0 REQUIRED COMPONENTS system log_setup log date_time fil
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_executable(Rtp1078 main.cpp tcp_server.h tcp_session.cpp tcp_session.h jtt1078_matcher.h system_init.h rtmp_client.cpp rtmp_client.h system.h rtmp.h rtmp_s1_matcher.h rtmp.cpp common_utils.h common_utils.cpp rtmp_chunk_matcher.h rtmp_cmd.h rtmp_packet_stream.cpp rtmp_packet_stream.h)
+add_executable(Rtp1078 main.cpp tcp_server.h tcp_session.cpp tcp_session.h jtt1078_matcher.h system_init.h rtmp_client.cpp rtmp_client.h system.h rtmp.h rtmp_s1_matcher.h common_utils.h common_utils.cpp rtmp_chunk_matcher.h rtmp_packet_stream.cpp rtmp_packet_stream.h)
 target_link_libraries(Rtp1078 ${Boost_LIBRARIES})

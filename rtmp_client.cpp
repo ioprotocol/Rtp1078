@@ -14,21 +14,12 @@
 extern config_t global_config;
 
 rtmp_client::rtmp_client(boost::asio::io_service& io_service, tcp_session* session)
-	: socket_(io_service), io_service_(io_service), session_(session),
-	  chunk_size_(NGX_RTMP_DEFAULT_CHUNK_SIZE), rtmp_output_stream_(chunk_size_)
+		: socket_(io_service), io_service_(io_service), session_(session),
+		  chunk_size_(NGX_RTMP_DEFAULT_CHUNK_SIZE), rtmp_output_stream_(chunk_size_)
 {
 	receive_bytes_count_ = 0;
 	window_size_ = NGX_RTMP_MAX_WINDOW_SIZE;
 	acknowledgement_size_ = NGX_RTMP_MAX_WINDOW_SIZE;
-	cmd_connect_.app = "live";
-	cmd_connect_.flashver = "FMLE/3.0 (compatible; FMSc/1.0)";
-	cmd_connect_.tc_url = "rtmp://192.168.1.106:1935/live";
-	cmd_connect_.audio_codecs = SUPPORT_SND_AAC;
-	cmd_connect_.vidio_codecs = SUPPORT_VID_H264;
-	cmd_connect_.capabilities = 0;
-	cmd_connect_.vidio_function = 0;
-	cmd_connect_.transaction_id = 0;
-	cmd_connect_.name = "test";
 }
 
 void rtmp_client::start()
@@ -46,7 +37,7 @@ void rtmp_client::handle_connected(const boost::system::error_code err)
 	}
 	else
 	{
-		session_->handle_proxy(err);
+		session_->pause_proxy(err.value());
 	}
 }
 
@@ -56,66 +47,66 @@ void rtmp_client::do_handshake_c0c1()
 	// write c0,c1
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (!err)
-	  {
-		  BOOST_LOG_TRIVIAL(info) << "HANDSHAKE c0,c1 sent ! size:" << bytes_transferred << "\n";
-		  // read s0,s1,s2
-		  boost::asio::async_read_until(socket_, read_stream_, rtmp_s1_matcher(1 + RTMP_S1_LENGTH + RTMP_S2_LENGTH), [this](boost::system::error_code err, size_t bytes_transferred)
-		  {
-			if (!err)
+		if (!err)
+		{
+			BOOST_LOG_TRIVIAL(info) << "HANDSHAKE c0,c1 sent ! size:" << bytes_transferred << "\n";
+			// read s0,s1,s2
+			boost::asio::async_read_until(socket_, read_stream_, rtmp_s1_matcher(1 + RTMP_S1_LENGTH + RTMP_S2_LENGTH), [this](boost::system::error_code err, size_t bytes_transferred)
 			{
-				BOOST_LOG_TRIVIAL(info) << "HANDSHAKE s0,s1,s2 read ! size:" << bytes_transferred << "\n";
-				const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
-				rtmp_output_stream_.create_c2_packet(data_ptr + 1, RTMP_S1_LENGTH);
-				this->read_stream_.consume(bytes_transferred);
-				boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
+				if (!err)
 				{
-				  if (!err)
-				  {
-					  BOOST_LOG_TRIVIAL(info) << "HANDSHAKE c2 send success !" << bytes_transferred << "\n";
-					  do_rtmp_connect();
-				  }
-				  else
-				  {
-					  BOOST_LOG_TRIVIAL(error) << "HANDSHAKE c2 send failed!" << err.message() << "\n";
-					  socket_.close();
-					  session_->handle_proxy(err);
-				  }
-				});
-			}
-			else
-			{
-				BOOST_LOG_TRIVIAL(error) << "HANDSHAKE s0,s1 read err!" << err.message() << "\n";
-				socket_.close();
-				session_->handle_proxy(err);
-			}
-		  });
-	  }
-	  else
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "HANDSHAKE c0,c1 send err!" << err.message() << "\n";
-		  socket_.close();
-		  session_->handle_proxy(err);
-	  }
+					BOOST_LOG_TRIVIAL(info) << "HANDSHAKE s0,s1,s2 read ! size:" << bytes_transferred << "\n";
+					const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
+					rtmp_output_stream_.create_c2_packet(data_ptr + 1, RTMP_S1_LENGTH);
+					this->read_stream_.consume(bytes_transferred);
+					boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
+					{
+						if (!err)
+						{
+							BOOST_LOG_TRIVIAL(info) << "HANDSHAKE c2 send success !" << bytes_transferred << "\n";
+							do_rtmp_connect();
+						}
+						else
+						{
+							BOOST_LOG_TRIVIAL(error) << "HANDSHAKE c2 send failed!" << err.message() << "\n";
+							socket_.close();
+							session_->pause_proxy(err.value());
+						}
+					});
+				}
+				else
+				{
+					BOOST_LOG_TRIVIAL(error) << "HANDSHAKE s0,s1 read err!" << err.message() << "\n";
+					socket_.close();
+					session_->pause_proxy(err.value());
+				}
+			});
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(error) << "HANDSHAKE c0,c1 send err!" << err.message() << "\n";
+			socket_.close();
+			session_->pause_proxy(err.value());
+		}
 	});
 }
 
 void rtmp_client::do_rtmp_connect()
 {
-	rtmp_output_stream_.create_connect_packet(cmd_connect_);
+	rtmp_output_stream_.create_connect_packet(session_->ctx());
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (!err)
-	  {
-		  BOOST_LOG_TRIVIAL(info) << "RTMP_CONNECT send success!" << bytes_transferred << "\n";
-		  do_receive_rtmp_packet();
-	  }
-	  else
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "RTMP_CONNECT send err!" << err.message() << "\n";
-		  socket_.close();
-		  session_->handle_proxy(err);
-	  }
+		if (!err)
+		{
+			BOOST_LOG_TRIVIAL(info) << "RTMP_CONNECT send success!" << bytes_transferred << "\n";
+			do_receive_rtmp_packet();
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(error) << "RTMP_CONNECT send err!" << err.message() << "\n";
+			socket_.close();
+			session_->pause_proxy(err.value());
+		}
 	});
 }
 
@@ -123,19 +114,19 @@ void rtmp_client::do_receive_rtmp_packet()
 {
 	boost::asio::async_read_until(socket_, read_stream_, rtmp_chunk_matcher(chunk_size_), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (!err)
-	  {
-		  const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
-		  do_parse_rtmp_packet(data_ptr, bytes_transferred);
-		  this->read_stream_.consume(bytes_transferred);
-		  this->do_receive_rtmp_packet();
-	  }
-	  else
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_receive_rtmp_packet err!" << socket_.remote_endpoint() << err.message() << "\n";
-		  socket_.close();
-		  session_->handle_proxy(err);
-	  }
+		if (!err)
+		{
+			const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
+			do_parse_rtmp_packet(data_ptr, bytes_transferred);
+			this->read_stream_.consume(bytes_transferred);
+			this->do_receive_rtmp_packet();
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_receive_rtmp_packet err!" << socket_.remote_endpoint() << err.message() << "\n";
+			socket_.close();
+			session_->pause_proxy(err.value());
+		}
 	});
 }
 
@@ -248,7 +239,7 @@ void rtmp_client::do_handle_rtmp_cmd_amf(const char* buf, std::size_t size)
 		{
 			if (search_amf_tree(buf, size, "NetConnection.Connect.Success"))
 			{
-				do_send_fc_publish();
+				do_send_create_stream();
 			}
 		}
 		if (!std::strncmp(&buf[head_size + 3], "onStatus", str_size))
@@ -256,6 +247,7 @@ void rtmp_client::do_handle_rtmp_cmd_amf(const char* buf, std::size_t size)
 			if (search_amf_tree(buf, size, "NetStream.Publish.Start"))
 			{
 				BOOST_LOG_TRIVIAL(info) << "NetStream.Publish.Start" << "\n";
+				session_->begin_proxy();
 			}
 		}
 	}
@@ -266,11 +258,11 @@ void rtmp_client::do_send_acknowledgement()
 	rtmp_output_stream_.create_acknowledgement(receive_bytes_count_);
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  receive_bytes_count_ = 0;
-	  if (err)
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement send err!" << err.message() << "\n";
-	  }
+		receive_bytes_count_ = 0;
+		if (err)
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement send err!" << err.message() << "\n";
+		}
 	});
 }
 
@@ -279,37 +271,66 @@ void rtmp_client::do_send_acknowledgement_size()
 	rtmp_output_stream_.create_acknowledgement_window_size(window_size_);
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (err)
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement_size send err!" << err.message() << "\n";
-	  }
+		if (err)
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_send_acknowledgement_size send err!" << err.message() << "\n";
+		}
+	});
+}
+
+void rtmp_client::do_send_create_stream()
+{
+	rtmp_output_stream_.create_create_stream();
+	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
+	{
+		if (err)
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_send_create_stream send err!" << err.message() << "\n";
+		}
+		else
+		{
+			do_send_fc_publish();
+		}
 	});
 }
 
 void rtmp_client::do_send_fc_publish()
 {
-	rtmp_output_stream_.create_fc_publish_packet(cmd_connect_.name);
+	rtmp_output_stream_.create_fc_publish_packet(session_->ctx().name);
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (err)
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_fc_publish send err!" << err.message() << "\n";
-	  }
-	  else
-	  {
-		  do_send_publish();
-	  }
+		if (err)
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_send_fc_publish send err!" << err.message() << "\n";
+		}
+		else
+		{
+			do_send_publish();
+		}
 	});
 }
 
 void rtmp_client::do_send_publish()
 {
-	rtmp_output_stream_.create_publish_packet(cmd_connect_.app, cmd_connect_.name);
+	rtmp_output_stream_.create_publish_packet(session_->ctx().app, session_->ctx().name);
 	boost::asio::async_write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()), [this](boost::system::error_code err, size_t bytes_transferred)
 	{
-	  if (err)
-	  {
-		  BOOST_LOG_TRIVIAL(error) << "do_send_publish send err!" << err.message() << "\n";
-	  }
+		if (err)
+		{
+			BOOST_LOG_TRIVIAL(error) << "do_send_publish send err!" << err.message() << "\n";
+		}
 	});
 }
+
+size_t rtmp_client::send_video_or_audio_packet(uint8_t fm, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
+{
+	rtmp_output_stream_.create_video_packet(fm, 1, delta, frame_type, data, size);
+	rtmp_output_stream_.print_debug_info();
+	size_t wrt_size = boost::asio::write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()));
+	if (wrt_size != rtmp_output_stream_.size())
+	{
+		BOOST_LOG_TRIVIAL(error) << "do_send_publish send err!\n" ;
+	}
+	return wrt_size;
+}
+

@@ -10,7 +10,6 @@
 #include<boost/function.hpp>
 
 #include "rtmp_packet_stream.h"
-#include "rtmp_cmd.h"
 
 class tcp_session;
 
@@ -21,9 +20,10 @@ public:
 
 	void start();
 
+	size_t send_video_or_audio_packet(uint8_t fm, uint32_t delta, uint8_t frame_type, const char* data, size_t size);
+private:
 	void handle_connected(const boost::system::error_code err);
 
-private:
 	void do_handshake_c0c1();
 
 	void do_rtmp_connect();
@@ -44,10 +44,11 @@ private:
 
 	void do_send_acknowledgement_size();
 
+	void do_send_create_stream();
+
 	void do_send_fc_publish();
 
 	void do_send_publish();
-
 
  private:
 	tcp_session* session_;
@@ -62,8 +63,6 @@ private:
 	uint32_t receive_bytes_count_;
 
 	rtmp_packet_stream rtmp_output_stream_;
-
-	rtmp_cmd_connect_t cmd_connect_;
 };
 
 #endif //RTP1078_RTMP_CLIENT_H

@@ -7,7 +7,6 @@
 
 #include "rtmp.h"
 #include "common_utils.h"
-#include "rtmp_cmd.h"
 
 class rtmp_packet_stream
 {
@@ -35,7 +34,12 @@ class rtmp_packet_stream
         data_[write_index_++] = v;
     }
 
-    inline void write(uint16_t v)
+	inline void write(char v)
+	{
+		data_[write_index_++] = v;
+	}
+
+	inline void write(uint16_t v)
     {
         data_[write_index_++] = v >> 8;
         data_[write_index_++] = v & 0xFF;
@@ -131,17 +135,19 @@ class rtmp_packet_stream
 
     void create_c2_packet(const char* p, uint32_t size);
 
-    void create_connect_packet(rtmp_cmd_connect_t& cmd);
+    void create_connect_packet(rtmp_context_t& ctx);
 
 	void create_acknowledgement(uint32_t received_size);
 
 	void create_acknowledgement_window_size(uint32_t window_size);
 
+	void create_create_stream();
+
 	void create_fc_publish_packet(std::string name);
 
 	void create_publish_packet(std::string app, std::string name);
 
-	void create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, const char* data, size_t size);
+	void create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, uint8_t frame_type, const char* data, size_t size);
 
 	inline void set_chunk_size(uint32_t size)
     {

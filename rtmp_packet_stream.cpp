@@ -135,7 +135,7 @@ void rtmp_packet_stream::create_acknowledgement_window_size(uint32_t window_size
 	packet_to_chunk();
 }
 
-void rtmp_packet_stream::create_connect_packet(rtmp_cmd_connect_t& cmd)
+void rtmp_packet_stream::create_connect_packet(rtmp_context_t& ctx)
 {
 	reset();
 	write((uint8_t)3);
@@ -149,24 +149,43 @@ void rtmp_packet_stream::create_connect_packet(rtmp_cmd_connect_t& cmd)
 	write((uint32_t)0);
 	// payload
 	write_amf_string("connect");
-	write_amf_number(cmd.transaction_id);
+	write_amf_number(ctx.transaction_id);
 	write_amf_object();
 	write_amf_number("objectEncoding", 0);
-	write_amf_boolean("fpad", cmd.fpad);
-	write_amf_string("flashVer", cmd.flashver);
-	write_amf_number("capabilities", cmd.capabilities);
-	write_amf_number("audioCodecs", cmd.audio_codecs);
-	write_amf_number("videoCodecs", cmd.vidio_codecs);
-	write_amf_number("videoFunction", cmd.vidio_function);
-	write_amf_string("swfUrl", cmd.swf_url);
-	write_amf_string("pageUrl", cmd.page_url);
-	write_amf_string("app", cmd.app);
-	write_amf_string("tcUrl", cmd.tc_url);
+	write_amf_boolean("fpad", ctx.fpad);
+	write_amf_string("flashVer", ctx.flashver);
+	write_amf_number("capabilities", ctx.capabilities);
+	write_amf_number("audioCodecs", ctx.audio_codecs);
+	write_amf_number("videoCodecs", ctx.vidio_codecs);
+	write_amf_number("videoFunction", ctx.vidio_function);
+	write_amf_string("swfUrl", ctx.swf_url);
+	write_amf_string("pageUrl", ctx.page_url);
+	write_amf_string("app", ctx.app);
+	write_amf_string("tcUrl", ctx.tc_url);
 	write_amf_end();
 
 	packet_to_chunk();
 }
 
+
+void rtmp_packet_stream::create_create_stream()
+{
+	reset();
+	write((uint8_t)3);
+	// timestamp
+	write_uint24(0);
+	// payload_size
+	write_uint24(0);
+	// message type id
+	write((uint8_t)NGX_RTMP_MSG_AMF_CMD);
+	// message stream id
+	write((uint32_t)0);
+	// payload
+	write_amf_string("createStream");
+	write_amf_number(2);
+	write((uint8_t)NGX_RTMP_AMF_NULL);
+	packet_to_chunk();
+}
 
 void rtmp_packet_stream::create_fc_publish_packet(std::string name)
 {
@@ -210,10 +229,53 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 	packet_to_chunk();
 }
 
-void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, const char* data, size_t size)
+void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
 {
 	reset();
-
+	if (frame_type == 3)
+	{
+		write((uint8_t)((fm << 6) | NGX_RTMP_MSG_AUDIO));
+	}
+	else
+	{
+		write((uint8_t)((fm << 6) | NGX_RTMP_MSG_VIDEO));
+	}
+	if (fm < 2)
+	{
+		// timestamp
+		write_uint24(delta);
+		// payload_size
+		write_uint24(0);
+		if (frame_type == 3)
+		{
+			write((uint8_t)((fm << 6) | NGX_RTMP_MSG_AUDIO));
+		}
+		else
+		{
+			// message type id
+			write((uint8_t)NGX_RTMP_MSG_VIDEO);
+		}
+	}
+	if (fm == 0)
+	{
+		// message stream id
+		write((uint32_t)(BYTE_ORDER_SWAP32(cs_id)));
+	}
+	if (frame_type == 0)
+	{
+		// I Frame -> RTMP keyframe(0x17)
+		write((uint8_t)0x17);
+	}
+	else if (frame_type == 1)
+	{
+		// P Frame -> RTMP inter-frame(0x27)
+		write((uint8_t)0x27);
+	}
+	for (uint32_t i = 0; i < size; i++)
+	{
+		write((uint8_t)(*(data + i)));
+	}
+	packet_to_chunk();
 }
 
 

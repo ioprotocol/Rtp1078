@@ -9,67 +9,42 @@
 
 class jtt1078_matcher
 {
- public:
-	jtt1078_matcher()
-	{
-	}
-
+public:
 	template<typename Iterator>
 	std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const
 	{
 		// find fix header for packet 0x30 0x31 0x63 0x64
-		if (end - begin < HEADER_SIZE)
+		if (end - begin < 4)
 		{
 			return std::make_pair(begin, false);
 		}
-		Iterator header_start = begin;
-		Iterator i = begin;
-		while (i != end)
+		if (!((*(begin) & 0xFF) == 0x30 && (*(begin + 1) & 0xFF) == 0x31 && (*(begin + 2) & 0xFF) == 0x63 && (*(begin + 3) & 0xFF)) == 0x64)
 		{
-			if (end - i < HEADER_SIZE)
-			{
-				return std::make_pair(begin, false);
-			}
-			if (*i == 0x30 && *(i + 1) == 0x31 && *(i + 2) == 0x63 && *(i + 3) == 0x64)
-			{
-				header_start = i;
-				break;
-			}
-			i++;
-		}
-		// match the fix header failed, skip the bytes that has read.
-		if (i == end)
-		{
-			return std::make_pair(end, false);
+			return std::make_pair(begin + 1, false);
 		}
 		// min length is 30
-		if (end - header_start < MIN_PACKET_LENGTH)
+		if (end - begin < 30)
 		{
-			return std::make_pair(header_start, false);
+			return std::make_pair(begin, false);
 		}
 		// length field check
-		uint16_t body_length = *(header_start + 28) << 8 | *(header_start + 29);
-		if (body_length > MAX_PACKET_SIZE)
+		uint32_t body_length;
+		body_length = (*(begin + 28)) & 0xFF;
+		body_length = body_length << 8;
+		body_length |= *(begin + 29) & 0xFF;
+		if (body_length > 8 * 1024)
 		{
 			// length is too long, skip all data.
 			return std::make_pair(end, false);
 		}
 
 		// body data has not compeletly transported
-		if (end - header_start - 30 < body_length)
+		if (end - begin < body_length + 30)
 		{
-			return std::make_pair(header_start, false);
+			return std::make_pair(begin, false);
 		}
-		return std::make_pair(header_start, true);
+		return std::make_pair(begin + 30 + body_length, true);
 	}
-
- private:
-	enum
-	{
-		MAX_PACKET_SIZE = 100 * 1024,
-		MIN_PACKET_LENGTH = 30,
-		HEADER_SIZE = 4,
-	};
 };
 
 namespace boost
@@ -82,5 +57,4 @@ namespace boost
 		};
 	} // namespace asio
 }
-
 #endif //RTP1078_JTT1078_MATCHER_H

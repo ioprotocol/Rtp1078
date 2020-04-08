@@ -5,8 +5,39 @@
 #ifndef RTP1078_RTMP_H
 #define RTP1078_RTMP_H
 
-#include <stdint.h>
-#include <string>
+#include "common_utils.h"
+
+typedef struct {
+	std::string app;
+	std::string name;
+
+	uint64_t transaction_id;
+	std::string flashver;
+	std::string swf_url;
+	std::string tc_url;
+	uint8_t fpad;
+	uint64_t audio_codecs;
+	uint64_t vidio_codecs;
+	uint64_t vidio_function;
+	std::string page_url;
+	uint64_t capabilities;
+
+	// about SPS, @see: 7.3.2.1.1, ISO_IEC_14496-10-AVC-2012.pdf, page 62
+	std::string h264_sps;
+	std::string h264_pps;
+	// whether the sps and pps sent,
+	// @see https://github.com/ossrs/srs/issues/203
+	bool h264_sps_pps_sent;
+	// only send the ssp and pps when both changed.
+	// @see https://github.com/ossrs/srs/issues/204
+	bool h264_sps_changed;
+	bool h264_pps_changed;
+	// the aac sequence header.
+	std::string aac_specific_config;
+	// user set timeout, in ms.
+	int64_t stimeout;
+	int64_t rtimeout;
+} rtmp_context_t;
 
 #define RTMP_MAX_PACKET_SIZE            16 *1024
 
@@ -130,31 +161,5 @@
  * fmt = 3  0 bytes
  */
 
-uint32_t rtmp_message_type(const char* p, uint32_t size);
 
-/**
- * Basic Header and Message Header size
- *
- * @param v
- * @return
- */
-uint32_t rtmp_header_size(uint8_t v);
-
-/**
- * Message length field position.
- *
- * @param v
- * @return
- */
-uint32_t rtmp_length_pos(uint8_t v);
-
-uint32_t read_uint16(const char* p);
-
-uint32_t read_uint24(const char* p);
-
-uint32_t read_uint32(const char* p);
-
-uint64_t read_uint64(const char* p);
-
-uint32_t search_amf_tree(const char* tree, size_t tree_size, const char* key);
 #endif //RTP1078_RTMP_H

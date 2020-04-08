@@ -6,6 +6,7 @@
 #define RTP1078_COMMON_UTILS_H
 
 #include <stdint.h>
+#include <string>
 
 #define BYTE_ORDER_SWAP16(A)        ((uint16_t)(((A & 0xff00) >> 8) | ((A & 0x00ff) << 8)))
 
@@ -26,5 +27,43 @@
 char integer_to_hex(unsigned char v);
 
 void print_packet(const char* p, uint32_t s);
+
+uint32_t rtmp_message_type(const char* p, uint32_t size);
+
+/**
+ * Basic Header and Message Header size
+ *
+ * @param v
+ * @return
+ */
+uint32_t rtmp_header_size(uint8_t v);
+
+/**
+ * Message length field position.
+ *
+ * @param v
+ * @return
+ */
+uint32_t rtmp_length_pos(uint8_t v);
+
+uint32_t read_uint16(const char* p);
+
+uint32_t read_uint24(const char* p);
+
+uint32_t read_uint32(const char* p);
+
+uint64_t read_uint64(const char* p);
+
+uint32_t search_amf_tree(const char* tree, size_t tree_size, const char* key);
+
+bool h264_is_sps(const char* frame, int size);
+
+uint32_t h264_sps_demux(const char* frame, int nb_frame, std::string& sps);
+
+bool h264_is_pps(const char* frame, int nb_frame);
+
+uint32_t h264_pps_demux(const char* frame, int nb_frame, std::string& pps);
+
+uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packet_type, uint32_t dts, uint32_t pts, char** flv, int* nb_flv);
 
 #endif //RTP1078_COMMON_UTILS_H
