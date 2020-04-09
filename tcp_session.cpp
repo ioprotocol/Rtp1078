@@ -44,14 +44,8 @@ void tcp_session::handle_jtt1078_packet()
 {
 	if (proxy_client_status_ != proxy_connected)
 	{
-//		BOOST_LOG_TRIVIAL(info) << "Proxy client is disconnect, try to connect!" << "\n";
-//		rtmp_client_.start();
-		rtmp = srs_rtmp_create("rtmp://127.0.0.1/live/test");
-		srs_rtmp_handshake(rtmp);
-		srs_rtmp_set_connect_args(rtmp, ctx_.tc_url.data(), ctx_.swf_url.data(), ctx_.page_url.data(), 0);
-		srs_rtmp_connect_app(rtmp);
-		srs_rtmp_publish_stream(rtmp);
-		proxy_client_status_ = proxy_connected;
+		BOOST_LOG_TRIVIAL(info) << "Proxy client is disconnect, try to connect!" << "\n";
+		rtmp_client_.start();
 		return;
 	}
 
@@ -97,11 +91,6 @@ void tcp_session::handle_jtt1078_packet()
 
 void tcp_session::handle_h264_frame(uint32_t dts, uint32_t pts, const char* data, size_t size)
 {
-
-	if (true)
-	{
-		return;
-	}
 	// for sps
 	if (h264_is_sps(data, size))
 	{
@@ -221,7 +210,7 @@ void tcp_session::handle_h264_frame(uint32_t dts, uint32_t pts, const char* data
 
 	// the timestamp in rtmp message header is dts.
 //	return srs_rtmp_write_packet(context, SRS_RTMP_TYPE_VIDEO, timestamp, flv, nb_flv);
-	rtmp_client_.send_video_or_audio_packet(1, dts, 1, flv, nb_flv);
+	rtmp_client_.send_video_or_audio_packet(0, dts, 1, flv, nb_flv);
 }
 
 void tcp_session::handle_session_error(const boost::system::error_code& error)

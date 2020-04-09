@@ -8,7 +8,6 @@
 #include <boost/asio.hpp>
 
 #include "rtmp_client.h"
-#include "srs_librtmp.h"
 
 using boost::asio::ip::tcp;
 
@@ -72,8 +71,6 @@ class tcp_session
 	uint32_t proxy_client_status_;
 
 	rtmp_context_t ctx_;
-
-	srs_rtmp_t rtmp;
 };
 
 #endif //RTP1078_TCP_SESSION_H

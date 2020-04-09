@@ -22,7 +22,7 @@ void rtmp_packet_stream::packet_to_chunk()
 	// split 3 chunk
 	char* m = &data_[head_size];
 	char* n = &data_[this->size()];
-	while (n - m > 128)
+	while (n - m > chunk_size_)
 	{
 		m = m + 128;
 		n = n + 1;
@@ -202,13 +202,13 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
 {
 	reset();
-	write((uint8_t)((fm << 6) | NGX_RTMP_MSG_VIDEO));
+	write((uint8_t)((fm << 6) | 9));
 	if (fm < 2)
 	{
 		// timestamp
 		write_uint24(delta);
 		// payload_size
-		write_uint24(0);
+		write_uint24(size);
 		// message type id
 		write((uint8_t)NGX_RTMP_MSG_VIDEO);
 	}
@@ -221,7 +221,7 @@ void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_
 	{
 		write((uint8_t)(*(data + i)));
 	}
-	packet_to_chunk();
+//	packet_to_chunk();
 }
 
 
