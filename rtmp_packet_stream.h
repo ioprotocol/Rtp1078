@@ -6,7 +6,6 @@
 #define RTP1078_RTMP_PACKET_STREAM_H
 
 #include "rtmp.h"
-#include "common_utils.h"
 
 class rtmp_packet_stream
 {
@@ -156,17 +155,7 @@ class rtmp_packet_stream
 
     void packet_to_chunk();
 
-    friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint8_t v);
-
-    friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint16_t v);
-
-    friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint32_t v);
-
-    friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint64_t v);
-
-    friend rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, std::string v);
-
-    void print_debug_info();
+    void print_debug_info(std::string key);
  private:
     char data_[RTMP_MAX_PACKET_SIZE];
     // rtmp chunk size, default is 128

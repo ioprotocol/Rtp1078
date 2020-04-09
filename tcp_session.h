@@ -46,7 +46,7 @@ class tcp_session
 
 	void handle_jtt1078_packet();
 
-	void handle_h264_frame(const char* data, size_t size);
+	void handle_h264_frame(uint32_t dts, uint32_t pts, const char* data, size_t size);
 
 	void handle_session_error(const boost::system::error_code& error);
  private:

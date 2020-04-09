@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "rtmp.h"
+#include "stream_buffer.h"
 
 char hex_table[16] = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8',
@@ -270,6 +271,111 @@ uint32_t h264_pps_demux(const char* frame, int nb_frame, std::string& pps)
 	return 0;
 }
 
+uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t dts, uint32_t pts, std::string& sh)
+{
+	// 5bytes sps/pps header:
+	//      configurationVersion, AVCProfileIndication, profile_compatibility,
+	//      AVCLevelIndication, lengthSizeMinusOne
+	// 3bytes size of sps:
+	//      numOfSequenceParameterSets, sequenceParameterSetLength(2B)
+	// Nbytes of sps.
+	//      sequenceParameterSetNALUnit
+	// 3bytes size of pps:
+	//      numOfPictureParameterSets, pictureParameterSetLength
+	// Nbytes of pps:
+	//      pictureParameterSetNALUnit
+	int nb_packet = 5 + (3 + (int)sps.length()) + (3 + (int)pps.length());
+	char* packet = new char[nb_packet];
+
+	stream_buffer stream(packet, nb_packet);
+	// decode the SPS:
+	// @see: 7.3.2.1.1, ISO_IEC_14496-10-AVC-2012.pdf, page 62
+	if (true) {
+//		srs_assert((int)sps.length() >= 4);
+		char* frame = (char*)sps.data();
+
+		// @see: Annex A Profiles and levels, ISO_IEC_14496-10-AVC-2003.pdf, page 205
+		//      Baseline profile profile_idc is 66(0x42).
+		//      Main profile profile_idc is 77(0x4d).
+		//      Extended profile profile_idc is 88(0x58).
+		uint8_t profile_idc = frame[1];
+		//uint8_t constraint_set = frame[2];
+		uint8_t level_idc = frame[3];
+
+		// generate the sps/pps header
+		// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
+		// configurationVersion
+		stream.write_1bytes(0x01);
+		// AVCProfileIndication
+		stream.write_1bytes(profile_idc);
+		// profile_compatibility
+		stream.write_1bytes(0x00);
+		// AVCLevelIndication
+		stream.write_1bytes(level_idc);
+		// lengthSizeMinusOne, or NAL_unit_length, always use 4bytes size,
+		// so we always set it to 0x03.
+		stream.write_1bytes(0x03);
+	}
+
+	// sps
+	if (true) {
+		// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
+		// numOfSequenceParameterSets, always 1
+		stream.write_1bytes(0x01);
+		// sequenceParameterSetLength
+		stream.write_2bytes((int16_t)sps.length());
+		// sequenceParameterSetNALUnit
+		stream.write_string(sps);
+	}
+
+	// pps
+	if (true) {
+		// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
+		// numOfPictureParameterSets, always 1
+		stream.write_1bytes(0x01);
+		// pictureParameterSetLength
+		stream.write_2bytes((int16_t)pps.length());
+		// pictureParameterSetNALUnit
+		stream.write_string(pps);
+	}
+
+	// TODO: FIXME: for more profile.
+	// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
+	// profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 144
+	sh.append(packet, nb_packet);
+
+	delete [] packet;
+	return 0;
+}
+
+uint32_t h264_mux_ipb_frame(const char* frame, int nb_frame, std::string& ibp)
+{
+	// 4bytes size of nalu:
+	//      NALUnitLength
+	// Nbytes of nalu.
+	//      NALUnit
+	int nb_packet = 4 + nb_frame;
+	char* packet = new char[nb_packet];
+
+	// use stream to generate the h264 packet.
+	stream_buffer stream(packet, nb_packet);
+	// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
+	// lengthSizeMinusOne, or NAL_unit_length, always use 4bytes size
+	uint32_t NAL_unit_length = nb_frame;
+
+	// mux the avc NALU in "ISO Base Media File Format"
+	// from ISO_IEC_14496-15-AVC-format-2012.pdf, page 20
+	// NALUnitLength
+	stream.write_4bytes(NAL_unit_length);
+	// NALUnit
+	stream.write_bytes(frame, nb_frame);
+
+//	ibp = std::string(packet, nb_packet);
+	ibp.append(packet, nb_packet);
+
+	return 0;
+}
+
 uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packet_type, uint32_t dts, uint32_t pts, char** flv, int* nb_flv)
 {
 	// for h264 in RTMP video payload, there is 5bytes header:
@@ -301,7 +407,7 @@ uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packe
 	*p++ = pp[0];
 
 	// h.264 raw data.
-	memcpy(p, video.data(), video.length());
+	std::memcpy(p, video.data(), video.length());
 
 	*flv = data;
 	*nb_flv = size;

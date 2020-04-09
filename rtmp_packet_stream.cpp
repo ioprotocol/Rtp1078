@@ -2,41 +2,12 @@
 // Created by xushuyang on 2020-4-6.
 //
 #include <boost/log/trivial.hpp>
-#include <lzma.h>
+#include <string>
+
 #include "rtmp_packet_stream.h"
 
 rtmp_packet_stream::rtmp_packet_stream(uint32_t chunkSize) : chunk_size_(chunkSize), read_index_(0), write_index_(0)
 {
-}
-
-rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint8_t v)
-{
-	stream.write(v);
-	return stream;
-}
-
-rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint16_t v)
-{
-	stream.write(v);
-	return stream;
-}
-
-rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint32_t v)
-{
-	stream.write(v);
-	return stream;
-}
-
-rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, uint64_t v)
-{
-	stream.write(v);
-	return stream;
-}
-
-rtmp_packet_stream& operator<<(rtmp_packet_stream& stream, std::string v)
-{
-	stream.write(v);
-	return stream;
 }
 
 void rtmp_packet_stream::packet_to_chunk()
@@ -67,7 +38,7 @@ void rtmp_packet_stream::packet_to_chunk()
 	}
 }
 
-void rtmp_packet_stream::print_debug_info()
+void rtmp_packet_stream::print_debug_info(std::string key)
 {
 	uint32_t i = 0, j = 0, s = this->size();
 	while (i < s)
@@ -78,7 +49,7 @@ void rtmp_packet_stream::print_debug_info()
 		i++;
 	}
 	debug_data_[j] = '\0';
-	BOOST_LOG_TRIVIAL(info) << "length:" << s << ":" << debug_data_;
+	BOOST_LOG_TRIVIAL(info) << key << ": length:" << s << ":" << debug_data_;
 }
 
 void rtmp_packet_stream::create_c0c1_packet()
@@ -167,7 +138,6 @@ void rtmp_packet_stream::create_connect_packet(rtmp_context_t& ctx)
 	packet_to_chunk();
 }
 
-
 void rtmp_packet_stream::create_create_stream()
 {
 	reset();
@@ -232,44 +202,20 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
 {
 	reset();
-	if (frame_type == 3)
-	{
-		write((uint8_t)((fm << 6) | NGX_RTMP_MSG_AUDIO));
-	}
-	else
-	{
-		write((uint8_t)((fm << 6) | NGX_RTMP_MSG_VIDEO));
-	}
+	write((uint8_t)((fm << 6) | NGX_RTMP_MSG_VIDEO));
 	if (fm < 2)
 	{
 		// timestamp
 		write_uint24(delta);
 		// payload_size
 		write_uint24(0);
-		if (frame_type == 3)
-		{
-			write((uint8_t)((fm << 6) | NGX_RTMP_MSG_AUDIO));
-		}
-		else
-		{
-			// message type id
-			write((uint8_t)NGX_RTMP_MSG_VIDEO);
-		}
+		// message type id
+		write((uint8_t)NGX_RTMP_MSG_VIDEO);
 	}
 	if (fm == 0)
 	{
 		// message stream id
 		write((uint32_t)(BYTE_ORDER_SWAP32(cs_id)));
-	}
-	if (frame_type == 0)
-	{
-		// I Frame -> RTMP keyframe(0x17)
-		write((uint8_t)0x17);
-	}
-	else if (frame_type == 1)
-	{
-		// P Frame -> RTMP inter-frame(0x27)
-		write((uint8_t)0x27);
 	}
 	for (uint32_t i = 0; i < size; i++)
 	{

@@ -325,7 +325,7 @@ void rtmp_client::do_send_publish()
 size_t rtmp_client::send_video_or_audio_packet(uint8_t fm, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
 {
 	rtmp_output_stream_.create_video_packet(fm, 1, delta, frame_type, data, size);
-	rtmp_output_stream_.print_debug_info();
+	rtmp_output_stream_.print_debug_info("video");
 	size_t wrt_size = boost::asio::write(socket_, boost::asio::buffer(rtmp_output_stream_.data(), rtmp_output_stream_.size()));
 	if (wrt_size != rtmp_output_stream_.size())
 	{

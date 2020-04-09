@@ -64,6 +64,10 @@ bool h264_is_pps(const char* frame, int nb_frame);
 
 uint32_t h264_pps_demux(const char* frame, int nb_frame, std::string& pps);
 
+uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t dts, uint32_t pts, std::string& sh);
+
+uint32_t h264_mux_ipb_frame(const char* frame, int nb_frame, std::string& ibp);
+
 uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packet_type, uint32_t dts, uint32_t pts, char** flv, int* nb_flv);
 
 #endif //RTP1078_COMMON_UTILS_H

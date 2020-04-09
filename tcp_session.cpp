@@ -10,18 +10,19 @@
 void tcp_session::start()
 {
 	boost::asio::async_read_until(socket_, read_stream_, jtt1078_matcher(),
-			[this](boost::system::error_code err, size_t size)
-			{
-				if (!err)
-				{
-					this->bytes_transferred_ = size;
-					handle_jtt1078_packet();
-				}
-				else
-				{
-					BOOST_LOG_TRIVIAL(info) << "Start read err!" << err.message() << "\n";
-				}
-			});
+		[this](boost::system::error_code err, size_t size)
+		{
+		  if (!err)
+		  {
+			  this->bytes_transferred_ = size;
+			  handle_jtt1078_packet();
+		  }
+		  else
+		  {
+			  BOOST_LOG_TRIVIAL(info) << "Start read err!" << err.message() << "\n";
+			  delete this;
+		  }
+		});
 }
 
 void tcp_session::begin_proxy()
@@ -36,6 +37,7 @@ void tcp_session::pause_proxy(uint32_t err)
 	BOOST_LOG_TRIVIAL(info) << "Proxy client err, pause to proxy data!" << "\n";
 //	proxy_client_status_ = proxy_disconnect;
 	read_stream_.consume(bytes_transferred_);
+	socket_.close();
 }
 
 void tcp_session::handle_jtt1078_packet()
@@ -52,8 +54,8 @@ void tcp_session::handle_jtt1078_packet()
 
 	uint8_t frame_type = (*(data_ptr + 15) & 0xF0) >> 4;
 	uint64_t timestamp = read_uint64(data_ptr + 16);
-	uint16_t iframe_timestamp = read_uint16(data_ptr + 24);
-	uint16_t pframe_timestamp = read_uint16(data_ptr + 26);
+	uint16_t dts = read_uint16(data_ptr + 24);
+	uint16_t pts = read_uint16(data_ptr + 26);
 	size_t data_size = read_uint16(data_ptr + 28);
 
 	// H.264码流分Annex-B和AVCC两种格式。 目前采用的是Annex-B, 拆开H264码流的每一帧,每帧码流以 0x00 00 00 01分割
@@ -77,7 +79,7 @@ void tcp_session::handle_jtt1078_packet()
 					}
 				}
 
-				handle_h264_frame(frame_begin + i, j - i);
+				handle_h264_frame(dts, pts, frame_begin + i, j - i);
 				i = j;
 				continue;
 			}
@@ -87,7 +89,7 @@ void tcp_session::handle_jtt1078_packet()
 	start();
 }
 
-void tcp_session::handle_h264_frame(const char* data, size_t size)
+void tcp_session::handle_h264_frame(uint32_t dts, uint32_t pts, const char* data, size_t size)
 {
 	// for sps
 	if (h264_is_sps(data, size))
@@ -132,16 +134,84 @@ void tcp_session::handle_h264_frame(const char* data, size_t size)
 	uint32_t nut = (uint32_t)(data[0] & 0x1f);
 	if (nut != 7 && nut != 8 && nut != 5 && nut != 1 && nut != 9)
 	{
-		return ;
+		return;
 	}
 
 	// send pps+sps before ipb frames when sps/pps changed.
 	if (ctx_.h264_pps_changed || ctx_.h264_sps_changed)
 	{
+		// h264 raw to h264 packet.
+		std::string sh;
+		if ((h264_mux_sequence_header(ctx_.h264_sps, ctx_.h264_pps, dts, pts, sh)) != 0)
+		{
+			return;
+		}
 
+		// h264 packet to flv packet.
+//		int8_t frame_type = SrsVideoAvcFrameTypeKeyFrame;
+//		int8_t avc_packet_type = SrsVideoAvcFrameTraitSequenceHeader;
+		int8_t frame_type = 1;
+		int8_t avc_packet_type = 0;
+		char* flv = NULL;
+		int nb_flv = 0;
+		if (h264_mux_avc2flv(sh, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv) != 0)
+		{
+			return;
+		}
+
+		// reset sps and pps.
+		ctx_.h264_sps_changed = false;
+		ctx_.h264_pps_changed = false;
+		ctx_.h264_sps_pps_sent = true;
+
+		// the timestamp in rtmp message header is dts.
+		rtmp_client_.send_video_or_audio_packet(0, dts, 0, flv, nb_flv);
+		return;
 	}
-}
 
+	// when sps or pps not sent, ignore the packet.
+	// @see https://github.com/ossrs/srs/issues/203
+	if (!ctx_.h264_sps_pps_sent) {
+		return;
+	}
+
+	// 5bits, 7.3.1 NAL unit syntax,
+	// ISO_IEC_14496-10-AVC-2003.pdf, page 44.
+	//  5: I Frame, 1: P/B Frame
+	// @remark we already group sps/pps to sequence header frame;
+	//      for I/P NALU, we send them in isolate frame, each NALU in a frame;
+	//      for other NALU, for example, AUD/SEI, we just ignore them, because
+	//      AUD used in annexb to split frame, while SEI generally we can ignore it.
+	// TODO: maybe we should group all NALUs split by AUD to a frame.
+//	if (nut != SrsAvcNaluTypeIDR && nut != SrsAvcNaluTypeNonIDR) {
+	if (nut != 5 && nut != 1) {
+		return ;
+	}
+
+	// for IDR frame, the frame is keyframe.
+//	uint32_t frame_type = SrsVideoAvcFrameTypeInterFrame;
+	uint32_t frame_type = 2;
+	if (nut == 5) {
+		frame_type = 1;
+	}
+
+	std::string ibp;
+	if (h264_mux_ipb_frame(data, size, ibp) != 0) {
+		return;
+	}
+
+//	int8_t avc_packet_type = SrsVideoAvcFrameTraitNALU;
+	int8_t avc_packet_type = 1;
+	char* flv = NULL;
+	int nb_flv = 0;
+	if (h264_mux_avc2flv(ibp, frame_type, avc_packet_type, dts, pts, &flv, &nb_flv) != 0) {
+		return;
+	}
+
+	// the timestamp in rtmp message header is dts.
+//	return srs_rtmp_write_packet(context, SRS_RTMP_TYPE_VIDEO, timestamp, flv, nb_flv);
+	rtmp_client_.send_video_or_audio_packet(1, dts, 1, flv, nb_flv);
+}
 
 void tcp_session::handle_session_error(const boost::system::error_code& error)
 {
