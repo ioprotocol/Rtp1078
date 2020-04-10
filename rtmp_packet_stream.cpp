@@ -10,7 +10,7 @@ rtmp_packet_stream::rtmp_packet_stream(uint32_t chunkSize) : chunk_size_(chunkSi
 {
 }
 
-void rtmp_packet_stream::packet_to_chunk()
+void rtmp_packet_stream::packet_to_chunk(int chunk_stream_id)
 {
 	uint32_t head_size = rtmp_header_size((uint8_t)data_[0]);
 	uint32_t length_field_pos = rtmp_length_pos((uint8_t)data_[0]);
@@ -31,7 +31,7 @@ void rtmp_packet_stream::packet_to_chunk()
 			*n = *(n - 1);
 			n--;
 		}
-		*m = (3 << 6) | 3;
+		*m = (3 << 6) | chunk_stream_id;
 		m++;
 		write_index_++;
 		n = &data_[this->size()];;
@@ -86,7 +86,7 @@ void rtmp_packet_stream::create_acknowledgement(uint32_t received_size)
 	// message stream id
 	write((uint32_t)0);
 	write((uint32_t)received_size);
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_acknowledgement_window_size(uint32_t window_size)
@@ -103,7 +103,7 @@ void rtmp_packet_stream::create_acknowledgement_window_size(uint32_t window_size
 	write((uint32_t)0);
 	write((uint32_t)window_size);
 	write((uint8_t)2);
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_connect_packet(rtmp_context_t& ctx)
@@ -135,7 +135,7 @@ void rtmp_packet_stream::create_connect_packet(rtmp_context_t& ctx)
 	write_amf_string("tcUrl", ctx.tc_url);
 	write_amf_end();
 
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_create_stream()
@@ -154,7 +154,7 @@ void rtmp_packet_stream::create_create_stream()
 	write_amf_string("createStream");
 	write_amf_number(2);
 	write((uint8_t)NGX_RTMP_AMF_NULL);
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_fc_publish_packet(std::string name)
@@ -175,7 +175,7 @@ void rtmp_packet_stream::create_fc_publish_packet(std::string name)
 	write((uint8_t)NGX_RTMP_AMF_NULL);
 	write_amf_string(name);
 
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_publish_packet(std::string app, std::string name)
@@ -196,13 +196,13 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 	write_amf_string(name);
 	write_amf_string(app);
 
-	packet_to_chunk();
+	packet_to_chunk(3);
 }
 
 void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_t delta, uint8_t frame_type, const char* data, size_t size)
 {
 	reset();
-	write((uint8_t)((fm << 6) | 9));
+	write((uint8_t)((fm << 6) | 6));
 	if (fm < 2)
 	{
 		// timestamp
@@ -221,7 +221,7 @@ void rtmp_packet_stream::create_video_packet(uint8_t fm, uint32_t cs_id, uint32_
 	{
 		write((uint8_t)(*(data + i)));
 	}
-//	packet_to_chunk();
+	packet_to_chunk(6);
 }
 
 

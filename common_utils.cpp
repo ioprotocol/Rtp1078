@@ -5,31 +5,30 @@
 #include <cstring>
 
 #include "rtmp.h"
-#include "stream_buffer.h"
 
 char hex_table[16] = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8',
-        '9', 'a', 'b', 'c', 'd', 'e', 'f'
+		'0', '1', '2', '3', '4', '5', '6', '7', '8',
+		'9', 'a', 'b', 'c', 'd', 'e', 'f'
 };
 
 char integer_to_hex(unsigned char v)
 {
-    return hex_table[v];
+	return hex_table[v];
 }
 
 void print_packet(const char* p, uint32_t s)
 {
-    uint32_t i = 0, j = 0;
-    char log[s * 2 + 1];
-    while (i < s)
-    {
-        unsigned char c = *(p + i);
-        log[j++] = integer_to_hex(c >> 4);
-        log[j++] = integer_to_hex(c & 0xF);
-        i++;
-    }
-    log[j] = '\0';
-    BOOST_LOG_TRIVIAL(info) << "size:" << s << ":" << log;
+	uint32_t i = 0, j = 0;
+	char log[s * 2 + 1];
+	while (i < s)
+	{
+		unsigned char c = *(p + i);
+		log[j++] = integer_to_hex(c >> 4);
+		log[j++] = integer_to_hex(c & 0xF);
+		i++;
+	}
+	log[j] = '\0';
+	BOOST_LOG_TRIVIAL(info) << "size:" << s << ":" << log;
 }
 
 uint32_t rtmp_message_type(const char* p, uint32_t size)
@@ -203,7 +202,7 @@ uint32_t search_amf_tree(const char* tree, size_t tree_size, const char* key)
 			p += 8;
 			break;
 		case NGX_RTMP_AMF_BOOLEAN:
-			key_value.append(std::to_string((uint8_t) *p)).append(";");
+			key_value.append(std::to_string((uint8_t)*p)).append(";");
 			p += 1;
 			break;
 		case NGX_RTMP_AMF_STRING:
@@ -245,7 +244,8 @@ bool h264_is_sps(const char* frame, int nb_frame)
 uint32_t h264_sps_demux(const char* frame, int nb_frame, std::string& sps)
 {
 	// atleast 1bytes for SPS to decode the type, profile, constrain and level.
-	if (nb_frame < 4) {
+	if (nb_frame < 4)
+	{
 		return 1;
 	}
 	sps = std::string(frame, nb_frame);
@@ -263,7 +263,8 @@ bool h264_is_pps(const char* frame, int nb_frame)
 
 uint32_t h264_pps_demux(const char* frame, int nb_frame, std::string& pps)
 {
-	if (nb_frame <= 0) {
+	if (nb_frame <= 0)
+	{
 		return 1;
 	}
 
@@ -290,7 +291,8 @@ uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t d
 	stream_buffer stream(packet, nb_packet);
 	// decode the SPS:
 	// @see: 7.3.2.1.1, ISO_IEC_14496-10-AVC-2012.pdf, page 62
-	if (true) {
+	if (true)
+	{
 //		srs_assert((int)sps.length() >= 4);
 		char* frame = (char*)sps.data();
 
@@ -318,7 +320,8 @@ uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t d
 	}
 
 	// sps
-	if (true) {
+	if (true)
+	{
 		// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
 		// numOfSequenceParameterSets, always 1
 		stream.write_1bytes(0x01);
@@ -329,7 +332,8 @@ uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t d
 	}
 
 	// pps
-	if (true) {
+	if (true)
+	{
 		// 5.3.4.2.1 Syntax, ISO_IEC_14496-15-AVC-format-2012.pdf, page 16
 		// numOfPictureParameterSets, always 1
 		stream.write_1bytes(0x01);
@@ -344,7 +348,7 @@ uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t d
 	// profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 144
 	sh.append(packet, nb_packet);
 
-	delete [] packet;
+	delete[] packet;
 	return 0;
 }
 
@@ -411,6 +415,120 @@ uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packe
 
 	*flv = data;
 	*nb_flv = size;
+
+	return 0;
+}
+
+bool srs_avc_startswith_annexb(stream_buffer* stream, int* pnb_start_code)
+{
+	if (!stream) {
+		return false;
+	}
+
+	char* bytes = stream->data() + stream->pos();
+	char* p = bytes;
+
+	for (;;) {
+		if (!stream->require((int)(p - bytes + 3))) {
+			return false;
+		}
+
+		// not match
+		if (p[0] != (char)0x00 || p[1] != (char)0x00) {
+			return false;
+		}
+
+		// match N[00] 00 00 01, where N>=0
+		if (p[2] == (char)0x01) {
+			if (pnb_start_code) {
+				*pnb_start_code = (int)(p - bytes) + 3;
+			}
+			return true;
+		}
+
+		p++;
+	}
+
+	return false;
+}
+
+bool srs_h264_startswith_annexb(char* h264_raw_data, int h264_raw_size, int* pnb_start_code)
+{
+	stream_buffer stream(h264_raw_data, h264_raw_size);
+	return srs_avc_startswith_annexb(&stream, pnb_start_code);
+}
+
+int read_h264_frame(char* data, int size, char** pp, int* pnb_start_code, int fps,
+		char** frame, int* frame_size, int* dts, int* pts)
+{
+	char* p = *pp;
+
+	// @remark, for this demo, to publish h264 raw file to SRS,
+	// we search the h264 frame from the buffer which cached the h264 data.
+	// please get h264 raw data from device, it always a encoded frame.
+	if (!srs_h264_startswith_annexb(p, size - (p - data), pnb_start_code))
+	{
+		return -1;
+	}
+
+	// @see srs_write_h264_raw_frames
+	// each frame prefixed h.264 annexb header, by N[00] 00 00 01, where N>=0,
+	// for instance, frame = header(00 00 00 01) + payload(67 42 80 29 95 A0 14 01 6E 40)
+	*frame = p;
+	p += *pnb_start_code;
+
+	for (; p < data + size; p++)
+	{
+		if (srs_h264_startswith_annexb(p, size - (p - data), NULL))
+		{
+			break;
+		}
+	}
+
+	*pp = p;
+	*frame_size = p - *frame;
+	if (*frame_size <= 0)
+	{
+		return -1;
+	}
+
+	// @remark, please get the dts and pts from device,
+	// we assume there is no B frame, and the fps can guess the fps and dts,
+	// while the dts and pts must read from encode lib or device.
+	*dts += 1000 / fps;
+	*pts = *dts;
+
+	return 0;
+}
+
+int annexb_demux(stream_buffer* stream, char** pframe, int* pnb_frame)
+{
+	*pframe = NULL;
+	*pnb_frame = 0;
+
+	while (!stream->empty()) {
+		// each frame must prefixed by annexb format.
+		// about annexb, @see ISO_IEC_14496-10-AVC-2003.pdf, page 211.
+		int pnb_start_code = 0;
+		if (!srs_avc_startswith_annexb(stream, &pnb_start_code)) {
+			return -1;
+		}
+		int start = stream->pos() + pnb_start_code;
+
+		// find the last frame prefixed by annexb format.
+		stream->skip(pnb_start_code);
+		while (!stream->empty()) {
+			if (srs_avc_startswith_annexb(stream, NULL)) {
+				break;
+			}
+			stream->skip(1);
+		}
+
+		// demux the frame.
+		*pnb_frame = stream->pos() - start;
+		*pframe = stream->data() + start;
+		break;
+	}
 
 	return 0;
 }

@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <string>
 
+#include "stream_buffer.h"
+
 #define BYTE_ORDER_SWAP16(A)        ((uint16_t)(((A & 0xff00) >> 8) | ((A & 0x00ff) << 8)))
 
 #define BYTE_ORDER_SWAP32(A)        ((uint32_t)(((A & 0xff000000) >> 24) | \
@@ -69,5 +71,14 @@ uint32_t h264_mux_sequence_header(std::string& sps, std::string& pps, uint32_t d
 uint32_t h264_mux_ipb_frame(const char* frame, int nb_frame, std::string& ibp);
 
 uint32_t h264_mux_avc2flv(std::string video, int8_t frame_type, int8_t avc_packet_type, uint32_t dts, uint32_t pts, char** flv, int* nb_flv);
+
+bool srs_avc_startswith_annexb(stream_buffer* stream, int* pnb_start_code);
+
+bool srs_h264_startswith_annexb(char* h264_raw_data, int h264_raw_size, int* pnb_start_code);
+
+int read_h264_frame(char* data, int size, char** pp, int* pnb_start_code, int fps,
+		char** frame, int* frame_size, int* dts, int* pts);
+
+int annexb_demux(stream_buffer* stream, char** pframe, int* pnb_frame);
 
 #endif //RTP1078_COMMON_UTILS_H

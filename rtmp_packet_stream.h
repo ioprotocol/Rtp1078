@@ -150,10 +150,10 @@ class rtmp_packet_stream
 
 	inline void set_chunk_size(uint32_t size)
     {
-        chunk_size_ = size;
+//        chunk_size_ = size;
     }
 
-    void packet_to_chunk();
+    void packet_to_chunk(int chunk_stream_id);
 
     void print_debug_info(std::string key);
  private:
