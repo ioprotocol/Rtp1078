@@ -7,7 +7,8 @@
 
 #include "common_utils.h"
 
-typedef struct {
+typedef struct
+{
 	std::string app;
 	std::string name;
 
@@ -39,6 +40,36 @@ typedef struct {
 	int64_t rtimeout;
 } rtmp_context_t;
 
+// H264 NALU 的类型，在分隔符后的第一个字节低5位
+
+#define NALU_TYPE_SLICE                1
+#define NALU_TYPE_DPA                    2
+#define NALU_TYPE_DPB                    3
+#define NALU_TYPE_DPC                    4
+#define NALU_TYPE_IDR                    5    /**关键帧***/
+#define NALU_TYPE_SEI                    6    /*****曾强帧******/
+#define NALU_TYPE_SPS                    7
+#define NALU_TYPE_PPS                    8
+#define NALU_TYPE_AUD                    9
+#define NALU_TYPE_EOSEQ                10
+#define NALU_TYPE_EOSTREAM                11
+#define NALU_TYPE_FILL                    12
+
+/**
+ * RTMP 视频帧Body第一个字节含义:
+ * 前4bits表示类型：
+ *·1-- keyframe
+ *·2 -- inner frame
+ *·3 -- disposable inner frame （h.263 only）
+ *·4 -- generated keyframe
+ *后4bits表示解码器ID：
+ *·2 -- seronson h.263
+ *·3 -- screen video
+ *·4 -- On2 VP6
+ *·5 -- On2 VP6 with alpha channel
+ *·6 -- Screen video version 2
+ *·7 -- AVC (h.264)
+ */
 #define RTMP_MAX_PACKET_SIZE            16 *1024
 
 #define NGX_RTMP_VERSION                3
