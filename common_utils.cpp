@@ -16,7 +16,7 @@ char integer_to_hex(unsigned char v)
 	return hex_table[v];
 }
 
-void print_packet(const char* p, uint32_t s)
+void print_packet(std::string key, const char* p, uint32_t s)
 {
 	uint32_t i = 0, j = 0;
 	char log[s * 2 + 1];
@@ -28,7 +28,7 @@ void print_packet(const char* p, uint32_t s)
 		i++;
 	}
 	log[j] = '\0';
-	BOOST_LOG_TRIVIAL(info) << "size:" << s << ":" << log;
+	BOOST_LOG_TRIVIAL(info) << key << ":size:" << s << ":" << log;
 }
 
 uint32_t rtmp_message_type(const char* p, uint32_t size)

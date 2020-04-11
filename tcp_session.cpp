@@ -50,9 +50,7 @@ void tcp_session::handle_jtt1078_packet()
 		return;
 	}
 
-	BOOST_LOG_TRIVIAL(info) << "handle_packet" << "\n";
 	const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
-
 
 	uint8_t frame_type = (*(data_ptr + 15) & 0xF0) >> 4;
 	uint64_t timestamp = read_uint64(data_ptr + 16);
@@ -63,42 +61,42 @@ void tcp_session::handle_jtt1078_packet()
 	// H.264码流分Annex-B和AVCC两种格式。 目前采用的是Annex-B, 拆开H264码流的每一帧,每帧码流以 0x00 00 00 01分割
 	const char* frame_begin = data_ptr + 30;
 	h264_stream_.append(const_cast<char*>(data_ptr + 30), data_size);
+	print_packet("1078", data_ptr, data_size);
+	print_packet("h264", h264_stream_.data(), h264_stream_.size());
 
 	char* h264_raw;
 	size_t nalu_size = 0;
-	if (!h264_stream_.find_nalu(&h264_raw, &nalu_size))
+	while (h264_stream_.find_nalu(&h264_raw, &nalu_size))
 	{
-		start();
-		return;
-	}
-	print_packet(h264_raw, nalu_size);
+		print_packet("find", h264_raw, nalu_size);
 
-	int dts = 0;
-	int pts = 0;
-	double fps = 25;
-	// @remark, to decode the file.
-	char* p = h264_raw;
-	int count = 0;
-	for (; p < h264_raw + nalu_size;) {
-		// @remark, read a frame from file buffer.
-		char* data = NULL;
-		int size = 0;
-		int nb_start_code = 0;
-		if (read_h264_frame(h264_raw, (int)nalu_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0) {
-			break;
-		}
+		int dts = 0;
+		int pts = 0;
+		double fps = 25;
+		// @remark, to decode the file.
+		char* p = h264_raw;
+		int count = 0;
+		for (; p < h264_raw + nalu_size;) {
+			// @remark, read a frame from file buffer.
+			char* data = NULL;
+			int size = 0;
+			int nb_start_code = 0;
+			if (read_h264_frame(h264_raw, (int)nalu_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0) {
+				break;
+			}
 
-		// send out the h264 packet over RTMP
+			// send out the h264 packet over RTMP
 //		int ret = srs_h264_write_raw_frames(rtmp, data, size, dts, pts);
-		handle_h264_frames(dts, pts, data, size);
+			handle_h264_frames(dts, pts, data, size);
 
-		// @remark, when use encode device, it not need to sleep.
-		if (count++ == 9) {
-			usleep(1000 * 1000 * count / fps);
-			count = 0;
+			// @remark, when use encode device, it not need to sleep.
+			if (count++ == 9) {
+				usleep(1000 * 1000 * count / fps);
+				count = 0;
+			}
 		}
+		h264_stream_.skip(nalu_size);
 	}
-	h264_stream_.skip(nalu_size);
 	start();
 }
 

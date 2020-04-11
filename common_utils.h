@@ -28,7 +28,7 @@
 
 char integer_to_hex(unsigned char v);
 
-void print_packet(const char* p, uint32_t s);
+void print_packet(std::string key, const char* p, uint32_t s);
 
 uint32_t rtmp_message_type(const char* p, uint32_t size);
 
