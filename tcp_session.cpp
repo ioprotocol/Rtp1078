@@ -52,7 +52,7 @@ void tcp_session::handle_jtt1078_packet()
 
 	BOOST_LOG_TRIVIAL(info) << "handle_packet" << "\n";
 	const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
-	print_packet(data_ptr, bytes_transferred_);
+
 
 	uint8_t frame_type = (*(data_ptr + 15) & 0xF0) >> 4;
 	uint64_t timestamp = read_uint64(data_ptr + 16);
@@ -62,7 +62,16 @@ void tcp_session::handle_jtt1078_packet()
 
 	// H.264码流分Annex-B和AVCC两种格式。 目前采用的是Annex-B, 拆开H264码流的每一帧,每帧码流以 0x00 00 00 01分割
 	const char* frame_begin = data_ptr + 30;
-	char* h264_raw = const_cast<char*>(data_ptr + 30);
+	h264_stream_.append(const_cast<char*>(data_ptr + 30), data_size);
+
+	char* h264_raw;
+	size_t nalu_size = 0;
+	if (!h264_stream_.find_nalu(&h264_raw, &nalu_size))
+	{
+		start();
+		return;
+	}
+	print_packet(h264_raw, nalu_size);
 
 	int dts = 0;
 	int pts = 0;
@@ -70,12 +79,12 @@ void tcp_session::handle_jtt1078_packet()
 	// @remark, to decode the file.
 	char* p = h264_raw;
 	int count = 0;
-	for (; p < h264_raw + data_size;) {
+	for (; p < h264_raw + nalu_size;) {
 		// @remark, read a frame from file buffer.
 		char* data = NULL;
 		int size = 0;
 		int nb_start_code = 0;
-		if (read_h264_frame(h264_raw, (int)data_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0) {
+		if (read_h264_frame(h264_raw, (int)nalu_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0) {
 			break;
 		}
 
@@ -89,6 +98,7 @@ void tcp_session::handle_jtt1078_packet()
 			count = 0;
 		}
 	}
+	h264_stream_.skip(nalu_size);
 	start();
 }
 

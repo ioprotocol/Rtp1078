@@ -8,6 +8,7 @@
 #include <boost/asio.hpp>
 
 #include "rtmp_client.h"
+#include "h264_stream.h"
 
 using boost::asio::ip::tcp;
 
@@ -59,6 +60,7 @@ class tcp_session
 	};
 	char data_[max_length];
 	boost::asio::streambuf read_stream_;
+	h264_stream h264_stream_;
 	size_t bytes_transferred_;
 
 	rtmp_client rtmp_client_;
