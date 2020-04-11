@@ -5,6 +5,7 @@
 #include <string>
 
 #include "rtmp_packet_stream.h"
+#include "stream_buffer.h"
 
 rtmp_packet_stream::rtmp_packet_stream(uint32_t chunkSize) : chunk_size_(chunkSize), read_index_(0), write_index_(0)
 {
@@ -20,21 +21,30 @@ void rtmp_packet_stream::packet_to_chunk(int chunk_stream_id)
 	data_[length_field_pos + 1] = (char)((payload_size >> 8) & 0xFF);
 	data_[length_field_pos + 2] = (char)(payload_size & 0xFF);
 	// split 3 chunk
-	char* m = &data_[head_size];
-	char* n = &data_[this->size()];
-	while (n - m > chunk_size_)
+	int m = (3 << 6) | chunk_stream_id;
+
+	if (payload_size > chunk_size_)
 	{
-		m = m + 128;
-		n = n + 1;
-		while (n > m)
+		char tmp_buf[size() * 2];
+		stream_buffer streamBuffer(tmp_buf, size() * 2);
+		streamBuffer.write_bytes(data_, head_size);
+		int count = 0;
+		int sum = head_size;
+		for (int i = 0; i < payload_size; i++, sum++)
 		{
-			*n = *(n - 1);
-			n--;
+			if (count == chunk_size_)
+			{
+				streamBuffer.write_1bytes(m);
+				count = 0;
+				sum++;
+			}
+			streamBuffer.write_1bytes(data_[head_size + i]);
+			count ++;
 		}
-		*m = (3 << 6) | chunk_stream_id;
-		m++;
-		write_index_++;
-		n = &data_[this->size()];;
+
+		std::memcpy(data_, tmp_buf, sum);
+		this->read_index_ = 0;
+		this->write_index_ = sum;
 	}
 }
 
@@ -120,7 +130,7 @@ void rtmp_packet_stream::create_connect_packet(rtmp_context_t& ctx)
 	write((uint32_t)0);
 	// payload
 	write_amf_string("connect");
-	write_amf_number(ctx.transaction_id);
+	write_amf_number(0xF03F);
 	write_amf_object();
 	write_amf_number("objectEncoding", 0);
 	write_amf_boolean("fpad", ctx.fpad);
@@ -152,7 +162,7 @@ void rtmp_packet_stream::create_create_stream()
 	write((uint32_t)0);
 	// payload
 	write_amf_string("createStream");
-	write_amf_number(2);
+	write_amf_number(0x1040);
 	write((uint8_t)NGX_RTMP_AMF_NULL);
 	packet_to_chunk(3);
 }
@@ -171,7 +181,7 @@ void rtmp_packet_stream::create_fc_publish_packet(std::string name)
 	write((uint32_t)0);
 	// payload
 	write_amf_string("FcPublish");
-	write_amf_number(3);
+	write_amf_number(0x0840);
 	write((uint8_t)NGX_RTMP_AMF_NULL);
 	write_amf_string(name);
 
@@ -189,9 +199,10 @@ void rtmp_packet_stream::create_publish_packet(std::string app, std::string name
 	// message type id
 	write((uint8_t)NGX_RTMP_MSG_AMF_CMD);
 	// message stream id
-	write((uint32_t)1);
+	write((uint32_t)BYTE_ORDER_SWAP32(1));
 	// payload
 	write_amf_string("publish");
+	write_amf_number(0);
 	write((uint8_t)NGX_RTMP_AMF_NULL);
 	write_amf_string(name);
 	write_amf_string(app);

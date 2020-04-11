@@ -495,8 +495,8 @@ int read_h264_frame(char* data, int size, char** pp, int* pnb_start_code, int fp
 	// @remark, please get the dts and pts from device,
 	// we assume there is no B frame, and the fps can guess the fps and dts,
 	// while the dts and pts must read from encode lib or device.
-	*dts += 1000 / fps;
-	*pts = *dts;
+//	*dts += 1000 / fps;
+//	*pts = *dts;
 
 	return 0;
 }

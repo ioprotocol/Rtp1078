@@ -52,36 +52,45 @@ void tcp_session::handle_jtt1078_packet()
 
 	const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
 
-	uint8_t frame_type = (*(data_ptr + 15) & 0xF0) >> 4;
 	uint64_t timestamp = read_uint64(data_ptr + 16);
-//	uint16_t dts = read_uint16(data_ptr + 24);
-//	uint16_t pts = read_uint16(data_ptr + 26);
+	int dts = read_uint16(data_ptr + 24);
+	int pts = read_uint16(data_ptr + 26);
 	size_t data_size = read_uint16(data_ptr + 28);
+	int spit_type = *(data_ptr + 15) & 0xF;
+	int vtype = (*(data_ptr + 15) >> 4) & 0xF;
 
+	if (vtype>= 3)
+	{
+		start();
+		return;
+	}
 	// H.264码流分Annex-B和AVCC两种格式。 目前采用的是Annex-B, 拆开H264码流的每一帧,每帧码流以 0x00 00 00 01分割
 	const char* frame_begin = data_ptr + 30;
 	h264_stream_.append(const_cast<char*>(data_ptr + 30), data_size);
-	print_packet("1078", data_ptr, data_size);
-	print_packet("h264", h264_stream_.data(), h264_stream_.size());
+	print_packet("after append", h264_stream_.data(), h264_stream_.size());
+
+//	if (spit_type == 1 || spit_type == 3)
+//	{
+//		start();
+//		return;
+//	}
 
 	char* h264_raw;
 	size_t nalu_size = 0;
-	while (h264_stream_.find_nalu(&h264_raw, &nalu_size))
+	while(h264_stream_.find_nalu(&h264_raw, &nalu_size))
 	{
-		print_packet("find", h264_raw, nalu_size);
-
-		int dts = 0;
-		int pts = 0;
 		double fps = 25;
 		// @remark, to decode the file.
 		char* p = h264_raw;
 		int count = 0;
-		for (; p < h264_raw + nalu_size;) {
+		for (; p < h264_raw + nalu_size;)
+		{
 			// @remark, read a frame from file buffer.
 			char* data = NULL;
 			int size = 0;
 			int nb_start_code = 0;
-			if (read_h264_frame(h264_raw, (int)nalu_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0) {
+			if (read_h264_frame(h264_raw, (int)nalu_size, &p, &nb_start_code, fps, &data, &size, &dts, &pts) < 0)
+			{
 				break;
 			}
 
@@ -90,13 +99,15 @@ void tcp_session::handle_jtt1078_packet()
 			handle_h264_frames(dts, pts, data, size);
 
 			// @remark, when use encode device, it not need to sleep.
-			if (count++ == 9) {
-				usleep(1000 * 1000 * count / fps);
-				count = 0;
-			}
+//		if (count++ == 9)
+//		{
+//			usleep(1000 * 1000 * count / fps);
+//			count = 0;
+//		}
 		}
 		h264_stream_.skip(nalu_size);
 	}
+	print_packet("after send", h264_stream_.data(), h264_stream_.size());
 	start();
 }
 
@@ -109,16 +120,19 @@ void tcp_session::handle_h264_frames(uint32_t dts, uint32_t pts, const char* fra
 	// @see https://github.com/ossrs/srs/issues/204
 
 	// send each frame.
-	while (!stream->empty()) {
+	while (!stream->empty())
+	{
 		char* frame = NULL;
 		int frame_size = 0;
-		if (annexb_demux(stream, &frame, &frame_size) != 0) {
+		if (annexb_demux(stream, &frame, &frame_size) != 0)
+		{
 			return;
 		}
 
 		// ignore invalid frame,
 		// atleast 1bytes for SPS to decode the type
-		if (frame_size <= 0) {
+		if (frame_size <= 0)
+		{
 			continue;
 		}
 

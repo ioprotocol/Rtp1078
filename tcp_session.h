@@ -20,14 +20,14 @@ class tcp_session
 	{
 		proxy_client_status_ = proxy_disconnect;
 		ctx_.app = "live";
-		ctx_.flashver = "FMLE/3.0 (compatible; FMSc/1.0)";
-		ctx_.tc_url = "rtmp://192.168.1.106:1935/live";
-		ctx_.audio_codecs = SUPPORT_SND_AAC;
-		ctx_.vidio_codecs = SUPPORT_VID_H264;
-		ctx_.capabilities = 0;
-		ctx_.vidio_function = 0;
-		ctx_.transaction_id = 1935;
-		ctx_.name = "test";
+		ctx_.flashver = "WIN 15,0,0,239";
+		ctx_.tc_url = "rtmp://127.0.0.1/live";
+		ctx_.audio_codecs = 0xeeab40;
+		ctx_.vidio_codecs = 0x806f40;
+		ctx_.capabilities = 0xe06d40;
+		ctx_.vidio_function = 0xf03f;
+		ctx_.transaction_id = 0xf03f;
+		ctx_.name = "test?vhost=127.0.0.1";
 	}
 
 	tcp::socket& socket()

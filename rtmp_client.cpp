@@ -239,7 +239,7 @@ void rtmp_client::do_handle_rtmp_cmd_amf(const char* buf, std::size_t size)
 		{
 			if (search_amf_tree(buf, size, "NetConnection.Connect.Success"))
 			{
-				do_send_create_stream();
+				do_send_fc_publish();
 			}
 		}
 		if (!std::strncmp(&buf[head_size + 3], "onStatus", str_size))
@@ -289,7 +289,7 @@ void rtmp_client::do_send_create_stream()
 		}
 		else
 		{
-			do_send_fc_publish();
+			do_send_publish();
 		}
 	});
 }
@@ -305,7 +305,7 @@ void rtmp_client::do_send_fc_publish()
 		}
 		else
 		{
-			do_send_publish();
+			do_send_create_stream();
 		}
 	});
 }
