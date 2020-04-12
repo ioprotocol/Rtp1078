@@ -2,6 +2,7 @@
 // Created by xushuyang on 2020-4-1.
 //
 #include <boost/log/trivial.hpp>
+#include <sys/time.h>
 
 #include "tcp_session.h"
 #include "jtt1078_matcher.h"
@@ -52,9 +53,13 @@ void tcp_session::handle_jtt1078_packet()
 
 	const char* data_ptr = boost::asio::buffer_cast<const char*>(this->read_stream_.data());
 
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	long ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
 	uint64_t timestamp = read_uint64(data_ptr + 16);
 	int dts = read_uint16(data_ptr + 24);
-	int pts = read_uint16(data_ptr + 26);
+	int pts = ms / 100;
 	size_t data_size = read_uint16(data_ptr + 28);
 	int spit_type = *(data_ptr + 15) & 0xF;
 	int vtype = (*(data_ptr + 15) >> 4) & 0xF;
@@ -67,22 +72,22 @@ void tcp_session::handle_jtt1078_packet()
 	// H.264码流分Annex-B和AVCC两种格式。 目前采用的是Annex-B, 拆开H264码流的每一帧,每帧码流以 0x00 00 00 01分割
 	const char* frame_begin = data_ptr + 30;
 	h264_stream_.append(const_cast<char*>(data_ptr + 30), data_size);
+	BOOST_LOG_TRIVIAL(info) << "read:" << bytes_transferred_ << " data_size:" << data_size << "\n";
 	print_packet("after append", h264_stream_.data(), h264_stream_.size());
 
-//	if (spit_type == 1 || spit_type == 3)
-//	{
-//		start();
-//		return;
-//	}
-
-	char* h264_raw;
-	size_t nalu_size = 0;
-	while(h264_stream_.find_nalu(&h264_raw, &nalu_size))
+	if (spit_type == 1 || spit_type == 3)
 	{
+		start();
+		return;
+	}
+
+	char* h264_raw = h264_stream_.data();
+	size_t nalu_size = h264_stream_.size();
+//	while(h264_stream_.find_nalu(&h264_raw, &nalu_size))
+//	{
 		double fps = 25;
 		// @remark, to decode the file.
 		char* p = h264_raw;
-		int count = 0;
 		for (; p < h264_raw + nalu_size;)
 		{
 			// @remark, read a frame from file buffer.
@@ -93,21 +98,9 @@ void tcp_session::handle_jtt1078_packet()
 			{
 				break;
 			}
-
-			// send out the h264 packet over RTMP
-//		int ret = srs_h264_write_raw_frames(rtmp, data, size, dts, pts);
 			handle_h264_frames(dts, pts, data, size);
-
-			// @remark, when use encode device, it not need to sleep.
-//		if (count++ == 9)
-//		{
-//			usleep(1000 * 1000 * count / fps);
-//			count = 0;
-//		}
 		}
-		h264_stream_.skip(nalu_size);
-	}
-	print_packet("after send", h264_stream_.data(), h264_stream_.size());
+	h264_stream_.reset();
 	start();
 }
 
